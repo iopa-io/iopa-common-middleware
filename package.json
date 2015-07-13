@@ -1,0 +1,47 @@
+{
+  "name": "iopa-common-middleware",
+  "main": "index.js",
+  "description": "iopa-common-middleware is a core set of iopa middleware for building self-hosted servers",
+  "author": "IOPA",
+  "maintainers": [
+    {
+      "name": "iopa",
+      "email": "build@iopa.io"
+    }
+  ],
+  "version": "1.0.5",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iopa-source/iopa-common-middleware.git"
+  },
+  "dependencies": {
+    "bluebird": "*",
+    "lru-cache": "*",
+    "iopa-common-stream": "*"
+  },
+  "keywords": [
+    "limerun",
+    "iopa",
+    "stream",
+    "middleware",
+    "promise",
+    "framework"
+  ],
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  ],
+  "engines": {
+    "node": ">= 0.12.0"
+  },
+  "scripts": {
+    "test": "mocha --reporter spec test",
+    "test-shippable": "mkdir -p shippable/testresults && mocha --reporter xunit test > shippable/testresults/result.xml"
+  },
+  "devDependencies": {
+    "mocha": "^2.2.5",
+    "should": "^7.0.2"
+  }
+}
