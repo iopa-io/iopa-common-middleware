@@ -54,7 +54,7 @@ ClientSend.prototype._client_createRequest = function BackForth_client_createReq
     var childContext = nextFactory(path, method);
     childContext.send = this._client_send.bind(childContext);
     childContext.observe = this._client_observe.bind(childContext);
-    childContext["iopa.Events"].on("done", this.client_invokeOnResponse.bind(this, childContext));
+    childContext["iopa.Body"].on("finish", this.client_invokeOnResponse.bind(this, childContext));
     return childContext;
 };
 
