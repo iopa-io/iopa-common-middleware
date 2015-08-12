@@ -33,7 +33,7 @@ function BackForth(app) {
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 BackForth.prototype.invoke = function BackForth_invoke(context, next) {
-    context["server.createRequest"] = this._client_createRequest.bind(this, context, context["server.createRequest"]);
+    context["server.CreateRequest"] = this._client_createRequest.bind(this, context, context["server.CreateRequest"]);
     context["iopa.Events"].on("response", this._client_invokeOnParentResponse.bind(this, context));
     return next();
 };

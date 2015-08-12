@@ -35,7 +35,7 @@ function ClientSend(app) {
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 ClientSend.prototype.invoke = function ClientSend_invoke(context, next) {
-    context["server.createRequest"] = this._client_createRequest.bind(this, context, context["server.createRequest"]);
+    context["server.CreateRequest"] = this._client_createRequest.bind(this, context, context["server.CreateRequest"]);
      return next();
 };
 
