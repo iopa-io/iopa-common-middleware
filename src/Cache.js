@@ -46,6 +46,20 @@ var _db = LRU({
     }
 });
 
+function cacheKey(context) {
+  
+    var result = "cache://";
+       result += context["server.RemoteAddress"];  
+       result += ":"+ context["server.RemotePort"];
+     //  result += "/" + (context["server.IsRequest"]) ? 'request' : 'response' ;
+       result += "/" + context["iopa.MessageId"] ;
+      
+      if (context["iopa.Token"])
+        result += "/"+ context["iopa.Token"].toString('hex');
+     
+      return result;
+}
+
 /**
  * IOPA Middleware for Cache of Outgoing Messages on Servers/Clients
  *
@@ -66,31 +80,16 @@ function Cache(app) {
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 Cache.prototype.invoke = function Cache_invoke(context, next) {
-    if (!context["cache.DoNotCache"]) {
-        var cacheData = {
-            "server.InProcess": context["server.InProcess"],
-            "server.IsLocalOrigin": context["server.IsLocalOrigin"],
-            "iopa.CallCancelledSource": context["iopa.CallCancelledSource"],
-            "iopa.Events": context["iopa.Events"],
-            "server.RawStream": context["server.RawStream"]
-        };
-
-           var key = cacheKey(context);
-              this._db.set(key, cacheData);
     
-       // context["cache.DoNotCache"] = true;
-   //     context["iopa.Events"].on('close', this._closeContext.bind(this, context));
-    }
-    
-    var that = this;
+  if (context["server.IsLocalOrigin"])
+     // client
+      context["server.RawStream"] = new iopaStream.OutgoingStreamTransform(this._write.bind(this, context, context["server.RawStream"]));  
+  else
+    // server
+     context.response["server.RawStream"] = new iopaStream.OutgoingStreamTransform(this._write.bind(this, context.response, context.response["server.RawStream"])); 
       
-    //HOOK INTO SEND PACKET PIPELINE
-    // context["server.RawStream"] = new iopaStream.OutgoingStreamTransform(this._write.bind(this, context, context.response["server.RawStream"]));  
-   return next().then(function(value){ 
-        var key = cacheKey(context);
-       that._db.del(key);
-       return value;
-    });
+  return next();
+    
 };
 
 /**
@@ -103,24 +102,38 @@ Cache.prototype.invoke = function Cache_invoke(context, next) {
  * @private
 */
 Cache.prototype._write = function Cache_write(context, nextStream, chunk, encoding, callback) {
+   
+     if (!context["cache.DoNotCache"]) 
+     {
+            var cacheData = {
+                "server.InProcess": context["server.InProcess"],
+                "server.IsLocalOrigin": context["server.IsLocalOrigin"],
+                "iopa.CallCancelledSource": context["iopa.CallCancelledSource"],
+                "iopa.Events": context["iopa.Events"],
+                "server.RawStream": context["server.RawStream"]
+                };
+            
+            var key = cacheKey(context);
+            this._db.set(key, cacheData);
+     };
+    
+     context["cache.DoNotCache"] = true;
+     context["iopa.Events"].on('close', this._closeContext.bind(this, context));
      nextStream.write(chunk, encoding, callback);
+};
+
+/**
+ * @method _closeContext
+ * @this context IOPA context dictionary
+ * @private
+*/
+Cache.prototype._closeContext = function Cache_close(context, key) {
+       this._db.del(key);
 };
 
 module.exports.Cache = Cache;
 
-function cacheKey(context) {
-  
-var result = "cache://";
-   result += context["server.RemoteAddress"];  
-   result += ":"+ context["server.RemotePort"];
- //  result += "/" + (context["server.IsRequest"]) ? 'request' : 'response' ;
-   result += "/" + context["iopa.MessageId"] ;
-  
-  if (context["iopa.Token"])
-    result += "/"+ context["iopa.Token"].toString('hex');
- 
-  return result;
-}
+
 
 /* *********************************************************
  * IOPA MIDDLEWARE: CACHE MIDDLEWARE SERVER EXTENSIONS
@@ -168,7 +181,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
     //    return next();
 
     //CHECK CACHE
-       var key = cacheKey(context);
+    var key = cacheKey(context);
   
     var cachedOriginal = _db.peek(key);
 
@@ -181,3 +194,68 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
 };
 
 module.exports.Match = CacheMatch;
+
+
+
+/**
+ * IOPA Middleware for Cache of Outgoing Messages on Servers/Clients
+ *
+ * @class Cache
+ * @constructor
+ * @public
+ */
+function CacheOLD(app) {
+      if (!app.properties["server.Capabilities"]["cache.Version"])
+        throw ("Missing Dependency:  cache Server/Middleware in Pipeline");
+
+    this._db = app.properties["server.Capabilities"]["cache.Support"]["cache.db"]();
+}
+
+/**
+ * @method invoke
+ * @param context IOPA context dictionary
+ * @param next   IOPA application delegate for the remainder of the pipeline
+ */
+CacheOLD.prototype.invoke = function CacheOLD_invoke(context, next) {
+    
+    if (!context["cache.DoNotCache"]) {
+        var cacheData = {
+            "server.InProcess": context["server.InProcess"],
+            "server.IsLocalOrigin": context["server.IsLocalOrigin"],
+            "iopa.CallCancelledSource": context["iopa.CallCancelledSource"],
+            "iopa.Events": context["iopa.Events"],
+            "server.RawStream": context["server.RawStream"]
+        };
+
+           var key = cacheKey(context);
+              this._db.set(key, cacheData);
+    
+       // context["cache.DoNotCache"] = true;
+   //     context["iopa.Events"].on('close', this._closeContext.bind(this, context));
+    }
+    
+    var that = this;
+      
+    //HOOK INTO SEND PACKET PIPELINE
+    // context["server.RawStream"] = new iopaStream.OutgoingStreamTransform(this._write.bind(this, context, context.response["server.RawStream"]));  
+   return next().then(function(value){ 
+        var key = cacheKey(context);
+       that._db.del(key);
+       return value;
+    });
+};
+
+/**
+ * @method _write
+ * @this context IOPA context dictionary
+ * @param nextStream  Raw Stream to send transformed data to
+ * @param chunk     String | Buffer The data to write
+ * @param encoding String The encoding, if chunk is a String
+ * @param callback Function Callback for when this chunk of data is flushed
+ * @private
+*/
+CacheOLD.prototype._write = function CacheOLD_write(context, nextStream, chunk, encoding, callback) {
+     nextStream.write(chunk, encoding, callback);
+};
+
+//module.exports.CacheOLD = CacheOLD;
