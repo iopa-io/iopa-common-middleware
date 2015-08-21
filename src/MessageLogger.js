@@ -26,7 +26,7 @@
  * @this app.properties  the IOPA AppBuilder Properties Dictionary
  * @constructor
  */
-function AuditLog(app) {
+function MessageLogger(app) {
     
      app.properties["server.Capabilities"]["Log.Version"] = "1.0";
 }
@@ -36,23 +36,31 @@ function AuditLog(app) {
  * @this context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-AuditLog.prototype.invoke = function AuditLog_invoke(context, next) {   
+MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {   
     context.response["server.RawStream"] = new iopaStream.OutgoingStreamTransform(this._write.bind(this, context, context.response["server.RawStream"]));  
+    context["iopa.Events"].on("response", this._invokeOnParentResponse.bind(this, context));
    
     if(context["server.IsLocalOrigin"])
     {
-        context.log.info("[IOPA] REQUEST OUT " + _requestLog(context))
-      
-        return next().then(function(response){
-            context.log.info("[IOPA] RESPONSE IN " + _responseLog(response));
-            return response;
-              });
+        context.log.info("[IOPA] REQUEST OUT " + _requestLog(context))  
+        return next();
     } else if (context["server.IsRequest"]) {
         context.log.info("[IOPA] REQUEST IN " + _requestLog(context))
         return next();
     };
     // IGNORE ALL OTHER
    return next();
+};
+
+/**
+ * @method _invokeOnParentResponse
+ * @this CacheMatch
+ * @param channelContext IOPA parent context dictionary
+ * @param context IOPA childResponse context dictionary
+ * @param next   IOPA application delegate for the remainder of the pipeline
+ */
+MessageLogger.prototype._invokeOnParentResponse = function MessageLogger_invokeOnParentResponse(channelContext, context) {
+     context.log.info("[IOPA] RESPONSE IN " + _responseLog(context))
 };
 
 /**
@@ -64,7 +72,7 @@ AuditLog.prototype.invoke = function AuditLog_invoke(context, next) {
  * @param callback Function Callback for when this chunk of data is flushed
  * @private
 */
-AuditLog.prototype._write = function _AuditLog_write(context, nextStream, chunk, encoding, callback) {
+MessageLogger.prototype._write = function _MessageLogger_write(context, nextStream, chunk, encoding, callback) {
    if(!context["server.IsLocalOrigin"])
              context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context.response));
    
@@ -99,4 +107,4 @@ function _responseLog(response)
     + response["iopa.Body"].toString();
 }
 
-module.exports = AuditLog;
+module.exports = MessageLogger;

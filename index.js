@@ -18,4 +18,4 @@
 exports.BackForth = require ( './src/BackForth.js' ) ;
 exports.Cache = require ( './src/Cache.js' ) ;
 exports.ClientSend = require ( './src/ClientSend.js' ) ;
-exports.AuditLog = require ( './src/AuditLog.js' ) ;
+exports.MessageLogger = require ( './src/MessageLogger.js' ) ;

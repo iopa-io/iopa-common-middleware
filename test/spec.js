@@ -18,12 +18,6 @@
 var iopaMiddleware = require('../index.js');
 var should = require('should');
 
-describe('#AuditLog()', function() {
-     it('should have AuditLog', function() {
-         iopaMiddleware.should.have.property("AuditLog");
-    });
-});
-
 describe('#BackForth()', function() {
      it('should have BackForth', function() {
          iopaMiddleware.should.have.property("BackForth");
@@ -41,5 +35,12 @@ describe('#ClientSend()', function() {
          iopaMiddleware.should.have.property("ClientSend");
     });
 });
+
+describe('#MessageLogger()', function() {
+     it('should have MessageLogger', function() {
+         iopaMiddleware.should.have.property("MessageLogger");
+    });
+});
+
 
 // TO DO ACTUALLY TEST THE MIDDLEWARE NOT JUST CHECK FOR IT
