@@ -51,11 +51,11 @@ function cacheKey(context) {
     var result = "cache://";
        result += context["server.RemoteAddress"];  
        result += ":"+ context["server.RemotePort"];
-     //  result += "/" + (context["server.IsRequest"]) ? 'request' : 'response' ;
-       result += "/" + context["iopa.MessageId"] ;
-      
-      if (context["iopa.Token"])
-        result += "/"+ context["iopa.Token"].toString('hex');
+                //  result += "/" + (context["server.IsRequest"]) ? 'request' : 'response' ;
+      result += "/" + context["iopa.MessageId"] ;
+                //  
+                //   if (context["iopa.Token"])
+   //   result += "/"+ context["iopa.Token"].toString('hex');
      
       return result;
 }
@@ -113,7 +113,10 @@ Cache.prototype._write = function Cache_write(context, nextStream, chunk, encodi
                 "server.RawStream": context["server.RawStream"]
                 };
             
-            var key = cacheKey(context);
+            var key = cacheKey1(context);
+            this._db.set(key, cacheData);
+            
+            var key = cacheKey2(context);
             this._db.set(key, cacheData);
      };
     
