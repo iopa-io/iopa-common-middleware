@@ -113,11 +113,9 @@ Cache.prototype._write = function Cache_write(context, nextStream, chunk, encodi
                 "server.RawStream": context["server.RawStream"]
                 };
             
-            var key = cacheKey1(context);
+            var key = cacheKey(context);
             this._db.set(key, cacheData);
-            
-            var key = cacheKey2(context);
-            this._db.set(key, cacheData);
+    
      };
     
      context["cache.DoNotCache"] = true;
