@@ -136,7 +136,7 @@ Cache.prototype._write = function Cache_write(context, nextStream, chunk, encodi
      } else
      console.log("DO NOT CACHE " + context["iopa.Method"] +" "+ context["iopa.MessageId"] +":" + context["iopa.Seq"]);
     
-     context["cache.DoNotCache"] = true;
+   //  context["cache.DoNotCache"] = true;
      context["iopa.Events"].on('close', this._closeContext.bind(this, context));
      nextStream.write(chunk, encoding, callback);
 };
