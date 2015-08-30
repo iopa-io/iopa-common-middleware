@@ -52,7 +52,7 @@ function cacheKeyId(context) {
        result += context["server.RemoteAddress"];  
        result += ":"+ context["server.RemotePort"];
                 //  result += "/" + (context["server.IsRequest"]) ? 'request' : 'response' ;
-      result += "/#" + context["iopa.MessageId"] ;
+      result += "/&id=" + context["iopa.MessageId"] ;
      
       return result;
 }
@@ -63,7 +63,7 @@ function cacheKeyToken(context) {
        result += context["server.RemoteAddress"];  
        result += ":"+ context["server.RemotePort"];
                 //  result += "/" + (context["server.IsRequest"]) ? 'request' : 'response' ;
-      result += "/$" + context["iopa.Token"] ;
+      result += "/&token=" + context["iopa.Token"] ;
     
       return result;
 }
@@ -119,18 +119,22 @@ Cache.prototype._write = function Cache_write(context, nextStream, chunk, encodi
                 "iopa.CallCancelledSource": context["iopa.CallCancelledSource"],
                 "iopa.Events": context["iopa.Events"],
                 "server.RawStream": context["server.RawStream"],
-                "iopa.Seq": context["iopa.Seq"]
+                "iopa.Seq": context["iopa.Seq"],
+                  "iopa.MessageId": context["iopa.MessageId"]
                 };
             
             var key = cacheKeyId(context);
             this._db.set(key, cacheData);
+              console.log(key);
             
             if (context["iopa.Token"])
             {
                key = cacheKeyToken(context);
                this._db.set(key, cacheData);
+               console.log(key);
             } 
-     };
+     } else
+     console.log("DO NOT CACHE " + context["iopa.Method"] +" "+ context["iopa.MessageId"] +":" + context["iopa.Seq"]);
     
      context["cache.DoNotCache"] = true;
      context["iopa.Events"].on('close', this._closeContext.bind(this, context));
@@ -203,25 +207,37 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
     if (context["iopa.Token"])
     {
         if (!cachedOriginal) {  
+            if (context["iopa.Token"])
+            {
             key = cacheKeyToken(context);
             cachedOriginal = _db.peek(key);
+            }
         } else {
             if (context["iopa.Token"] && cachedOriginal["iopa.Token"] &&
              (context["iopa.Token"] !== cachedOriginal["iopa.Token"]))
+             {
                 cachedOriginal = undefined;
+                context.log.info("[IOPA_MATCH] TOKENS DONT MATCH " + context["iopa.Method"] +" "+ context["iopa.MessageId"] +":" + context["iopa.Seq"]);
+             }
         }
     }
 
     if (cachedOriginal) {
               if (cachedOriginal["server.InProcess"]) {
              // TRANSFER ONTO EVENTS PIPELINE
+              context.log.info("[IOPA_MATCH] MATCHED " + context["iopa.Method"] +" "+ context["iopa.MessageId"] +":" + context["iopa.Seq"] + " to " + cachedOriginal["iopa.MessageId"] +":" + cachedOriginal["iopa.Seq"] );
+       
               cachedOriginal["iopa.Events"].emit("response", context); 
         } else
          {
+           context.log.info("[IOPA_MATCH] TOO LATE FOR PIPELINE " + context["iopa.Method"] +" "+ context["iopa.MessageId"] +":" + context["iopa.Seq"]);
+       
              // silently ignore  TODO: Transfer to a different pipeline
          }
     } else
          {
+                context.log.info("[IOPA_MATCH] UNKNOWN RESPONSE REFERENCE " + cacheKeyId(context) + "    " + context["iopa.Method"] +" "+ context["iopa.MessageId"] +":" + context["iopa.Seq"]);
+       
              // silently ignore    TODO: Transfer to a different pipeline
          }
 };
