@@ -46,17 +46,25 @@ var _db = LRU({
     }
 });
 
-function cacheKey(context) {
+function cacheKeyId(context) {
   
     var result = "cache://";
        result += context["server.RemoteAddress"];  
        result += ":"+ context["server.RemotePort"];
                 //  result += "/" + (context["server.IsRequest"]) ? 'request' : 'response' ;
-      result += "/" + context["iopa.MessageId"] ;
-                //  
-                //   if (context["iopa.Token"])
-   //   result += "/"+ context["iopa.Token"].toString('hex');
+      result += "/#" + context["iopa.MessageId"] ;
      
+      return result;
+}
+
+function cacheKeyToken(context) {
+  
+    var result = "cache://";
+       result += context["server.RemoteAddress"];  
+       result += ":"+ context["server.RemotePort"];
+                //  result += "/" + (context["server.IsRequest"]) ? 'request' : 'response' ;
+      result += "/$" + context["iopa.Token"] ;
+    
       return result;
 }
 
@@ -110,12 +118,18 @@ Cache.prototype._write = function Cache_write(context, nextStream, chunk, encodi
                 "server.IsLocalOrigin": context["server.IsLocalOrigin"],
                 "iopa.CallCancelledSource": context["iopa.CallCancelledSource"],
                 "iopa.Events": context["iopa.Events"],
-                "server.RawStream": context["server.RawStream"]
+                "server.RawStream": context["server.RawStream"],
+                "iopa.Seq": context["iopa.Seq"]
                 };
             
-            var key = cacheKey(context);
+            var key = cacheKeyId(context);
             this._db.set(key, cacheData);
-    
+            
+            if (context["iopa.Token"])
+            {
+               key = cacheKeyToken(context);
+               this._db.set(key, cacheData);
+            } 
      };
     
      context["cache.DoNotCache"] = true;
@@ -182,16 +196,34 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
     //    return next();
 
     //CHECK CACHE
-    var key = cacheKey(context);
-  
+    var key = cacheKeyId(context);
+   
     var cachedOriginal = _db.peek(key);
+    
+    if (context["iopa.Token"])
+    {
+        if (!cachedOriginal) {  
+            key = cacheKeyToken(context);
+            cachedOriginal = _db.peek(key);
+        } else {
+            if (context["iopa.Token"] && cachedOriginal["iopa.Token"] &&
+             (context["iopa.Token"] !== cachedOriginal["iopa.Token"]))
+                cachedOriginal = undefined;
+        }
+    }
 
     if (cachedOriginal) {
               if (cachedOriginal["server.InProcess"]) {
              // TRANSFER ONTO EVENTS PIPELINE
-             cachedOriginal["iopa.Events"].emit("response", context); 
-        }
-    }
+              cachedOriginal["iopa.Events"].emit("response", context); 
+        } else
+         {
+             // silently ignore  TODO: Transfer to a different pipeline
+         }
+    } else
+         {
+             // silently ignore    TODO: Transfer to a different pipeline
+         }
 };
 
 module.exports.Match = CacheMatch;
