@@ -91,7 +91,7 @@ function _url(context)
 
 function _requestLog(context)
 {
-    return   context["iopa.Method"] + " " + context["iopa.MessageId"] + " " 
+    return   context["iopa.Method"] + " " + context["iopa.MessageId"] + ":" + context["iopa.Seq"] + " "
         +  _url(context) 
         + "  " + context["iopa.Body"].toString();
 }
@@ -99,7 +99,7 @@ function _requestLog(context)
 function _responseLog(response, chunk)
 {
    
-    return response["iopa.Method"] + " " + response["iopa.MessageId"] + " "  
+    return response["iopa.Method"] + " " + response["iopa.MessageId"] + ":" + response["iopa.Seq"] + " " 
    + response["iopa.StatusCode"] + "/" 
     + response["iopa.ReasonPhrase"] 
     + " [" + response["server.RemoteAddress"] 
