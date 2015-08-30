@@ -60,7 +60,7 @@ MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 MessageLogger.prototype._invokeOnParentResponse = function MessageLogger_invokeOnParentResponse(channelContext, context) {
-     context.log.info("[IOPA] RESPONSE IN " + _responseLog(context, context["iopa.Body"]))
+     context.log.info("[IOPA] RESPONSE IN " + _responseLog(context))
 };
 
 /**
@@ -74,7 +74,7 @@ MessageLogger.prototype._invokeOnParentResponse = function MessageLogger_invokeO
 */
 MessageLogger.prototype._write = function _MessageLogger_write(context, nextStream, chunk, encoding, callback) {
    if(!context["server.IsLocalOrigin"])
-             context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context.response, chunk));
+             context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context.response));
    
     nextStream.write(chunk, encoding, callback);
 };
@@ -104,7 +104,7 @@ function _responseLog(response, chunk)
     + response["iopa.ReasonPhrase"] 
     + " [" + response["server.RemoteAddress"] 
     + ":" + response["server.RemotePort"] + "]" + "  " 
-    + chunk.toString();
+    + response["iopa.Body"].toString();
 }
 
 module.exports = MessageLogger;
