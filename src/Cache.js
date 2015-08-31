@@ -125,17 +125,14 @@ Cache.prototype._write = function Cache_write(context, nextStream, chunk, encodi
             
             var key = cacheKeyId(context);
             this._db.set(key, cacheData);
-              console.log(key);
             
             if (context["iopa.Token"])
             {
                key = cacheKeyToken(context);
                this._db.set(key, cacheData);
-               console.log(key);
             } 
      } else
-     console.log("DO NOT CACHE " + context["iopa.Method"] +" "+ context["iopa.MessageId"] +":" + context["iopa.Seq"]);
-    
+     
    //  context["cache.DoNotCache"] = true;
      context["iopa.Events"].on('close', this._closeContext.bind(this, context));
      nextStream.write(chunk, encoding, callback);
