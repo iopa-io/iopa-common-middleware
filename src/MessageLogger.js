@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
- const util = require('util') ,
-   iopaStream = require('iopa-common-stream');
 
+const util = require('util'),
+    iopaStream = require('iopa-common-stream');
 
 /**
  * IOPA Middleware:  Log each incoming message
@@ -27,8 +26,8 @@
  * @constructor
  */
 function MessageLogger(app) {
-    
-     app.properties["server.Capabilities"]["Log.Version"] = "1.0";
+
+    app.properties["server.Capabilities"]["Log.Version"] = "1.0";
 }
 
 /**
@@ -36,20 +35,23 @@ function MessageLogger(app) {
  * @this context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {   
-    context.response["server.RawStream"] = new iopaStream.OutgoingStreamTransform(this._write.bind(this, context, context.response["server.RawStream"]));  
+MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {
+    if (!context["server.IsRequest"] && context["server.IsLocalOrigin"])
+        context["server.RawStream"] = new iopaStream.OutgoingStreamTransform(this._writeResponse.bind(this, context, context["server.RawStream"]));
+    else if (!context["server.IsLocalOrigin"])
+        context.response["server.RawStream"] = new iopaStream.OutgoingStreamTransform(this._writeResponse.bind(this, context, context.response["server.RawStream"]));
+
     context["iopa.Events"].on("response", this._invokeOnParentResponse.bind(this, context));
-   
-    if(context["server.IsLocalOrigin"])
-    {
-        context.log.info("[IOPA] REQUEST OUT " + _requestLog(context))  
+
+    if (context["server.IsLocalOrigin"] && context["server.IsRequest"]) {
+        context.log.info("[IOPA] REQUEST OUT " + _requestLog(context))
         return next();
     } else if (context["server.IsRequest"]) {
         context.log.info("[IOPA] REQUEST IN " + _requestLog(context))
         return next();
     };
     // IGNORE ALL OTHER
-   return next();
+    return next();
 };
 
 /**
@@ -60,7 +62,7 @@ MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 MessageLogger.prototype._invokeOnParentResponse = function MessageLogger_invokeOnParentResponse(channelContext, context) {
-     context.log.info("[IOPA] RESPONSE IN " + _responseLog(context))
+    context.log.info("[IOPA] RESPONSE IN " + _responseLog(context))
 };
 
 /**
@@ -72,39 +74,38 @@ MessageLogger.prototype._invokeOnParentResponse = function MessageLogger_invokeO
  * @param callback Function Callback for when this chunk of data is flushed
  * @private
 */
-MessageLogger.prototype._write = function _MessageLogger_write(context, nextStream, chunk, encoding, callback) {
-   if(!context["server.IsLocalOrigin"])
-             context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context.response));
-   
+MessageLogger.prototype._writeResponse = function _MessageLogger_writeResponse(context, nextStream, chunk, encoding, callback) {
+    if (!context["server.IsLocalOrigin"])
+        context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context.response));
+    else
+        context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context));
+
     nextStream.write(chunk, encoding, callback);
 };
 
-function _url(context)
-{
-    return  context["iopa.Scheme"] 
-    + "//" + context["server.RemoteAddress"] 
-    + ":" + context["server.RemotePort"] 
-    + context["iopa.Path"]
-    + (context["iopa.QueryString"]  ? + context["iopa.QueryString"]  : "");
+function _url(context) {
+    return context["iopa.Scheme"]
+        + "//" + context["server.RemoteAddress"]
+        + ":" + context["server.RemotePort"]
+        + context["iopa.Path"]
+        + (context["iopa.QueryString"] ? + context["iopa.QueryString"] : "");
 }
 
 
-function _requestLog(context)
-{
-    return   context["iopa.Method"] + " " + context["iopa.MessageId"] + ":" + context["iopa.Seq"] + " "
-        +  _url(context) 
+function _requestLog(context) {
+    return context["iopa.Method"] + " " + context["iopa.MessageId"] + ":" + context["iopa.Seq"] + " "
+        + _url(context)
         + "  " + context["iopa.Body"].toString();
 }
 
-function _responseLog(response, chunk)
-{
-   
-    return response["iopa.Method"] + " " + response["iopa.MessageId"] + ":" + response["iopa.Seq"] + " " 
-   + response["iopa.StatusCode"] + "/" 
-    + response["iopa.ReasonPhrase"] 
-    + " [" + response["server.RemoteAddress"] 
-    + ":" + response["server.RemotePort"] + "]" + "  " 
-    + response["iopa.Body"].toString();
+function _responseLog(response, chunk) {
+
+    return response["iopa.Method"] + " " + response["iopa.MessageId"] + ":" + response["iopa.Seq"] + " "
+        + response["iopa.StatusCode"] + "/"
+        + response["iopa.ReasonPhrase"]
+        + " [" + response["server.RemoteAddress"]
+        + ":" + response["server.RemotePort"] + "]" + "  "
+        + response["iopa.Body"].toString();
 }
 
 module.exports = MessageLogger;
