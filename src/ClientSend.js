@@ -37,10 +37,10 @@ function ClientSend(app) {
  * @param context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-ClientSend.prototype.invoke = function ClientSend_invoke(context, next) {
-    context[SERVER.Fetch] = this._fetch.bind(this, context, context[SERVER.Fetch]);
-    context.send = this._send.bind(this, context);
-    context.observe = this._observe.bind(this, context);
+ClientSend.prototype.invoke = function ClientSend_invoke(channelContext, next) {
+    channelContext[SERVER.Fetch] = this._fetch.bind(this, channelContext, channelContext[SERVER.Fetch]);
+    channelContext.send = this._send.bind(this, channelContext);
+    channelContext.observe = this._observe.bind(this, channelContext);
     return next();
 };
 
@@ -56,10 +56,8 @@ ClientSend.prototype.invoke = function ClientSend_invoke(context, next) {
  * @returns {Promise(context)}
  * @public
  */
-ClientSend.prototype._fetch = function ClientSend_fetch(context, nextFactory, path, options, pipeline) {
+ClientSend.prototype._fetch = function ClientSend_fetch(channelContext, nextFactory, path, options, pipeline) {
     return nextFactory(path, options, function (childContext) {
-        childContext.send = this._client_send.bind(childContext);
-        childContext.observe = this._client_observe.bind(childContext);
         childContext[IOPA.Events].on(IOPA.EVENTS.Response, this.client_invokeOnResponse.bind(this, childContext));
         return pipeline(childContext);
     });
