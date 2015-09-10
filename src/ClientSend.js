@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2015 Limerun Project Contributors
- * Portions Copyright (c) 2015 Internet of Protocols Assocation (IOPA)
+ * Copyright (c) 2015 Internet of Protocols Alliance (IOPA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+      
+ const constants = require('iopa').constants,
+    IOPA = constants.IOPA,
+    SERVER = constants.SERVER,
+    METHODS = constants.METHODS,
+    PORTS = constants.PORTS,
+    SCHEMES = constants.SCHEMES,
+    PROTOCOLS = constants.PROTOCOLS,
+    IOPAEVENTS = constants.EVENTS,
+    APP = constants.APP,
+    COMMONKEYS = constants.COMMONKEYS,
+    OPAQUE = constants.OPAQUE,
+    WEBSOCKET = constants.WEBSOCKET,
+    SECURITY = constants.SECURITY;
     
-    var Promise = require('bluebird');
-    
+ const iopaStream = require('iopa-common-stream');
+        
 /**
  * IOPA Middleware 
  *
@@ -26,7 +39,7 @@
  * @public
  */
 function ClientSend(app) {
-     app.properties["server.Capabilities"]["ClientSend.Version"] = "1.0";
+     app.properties[SERVER.Capabilities]["clientSend.Version"] = "1.0";
 }
 
 /**
@@ -35,54 +48,64 @@ function ClientSend(app) {
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 ClientSend.prototype.invoke = function ClientSend_invoke(context, next) {
-    context["server.CreateRequest"] = this._client_createRequest.bind(this, context, context["server.CreateRequest"]);
-     return next();
+    context[SERVER.Fetch] = this._fetch.bind(this, context, context[SERVER.Fetch]);
+    context.send = this._send.bind(this, context);
+    context.observe = this._observe.bind(this, context);
+    return next();
 };
 
 
 /**
  * Context Func(tion) to create a new IOPA Request using a Tcp Url including host and port name
  *
- * @method createRequest
+ * @method fetch
 
- * @parm {string} path url representation of ://127.0.0.1/hello
- * @parm {string} [method]  request method (e.g. 'GET')
+ * @parm  path url representation of ://127.0.0.1/hello
+ * @param options object dictionary to override defaults
+ * @param pipeline function(context):Promise  to call with context record
  * @returns {Promise(context)}
  * @public
  */
-ClientSend.prototype._client_createRequest = function BackForth_client_createRequest(context, nextFactory, path, method){
-    var childContext = nextFactory(path, method);
-    childContext.send = this._client_send.bind(childContext);
-    childContext.observe = this._client_observe.bind(childContext);
-    childContext["iopa.Events"].on("response", this.client_invokeOnResponse.bind(this, childContext));
-    return childContext;
+ClientSend.prototype._fetch = function ClientSend_fetch(context, nextFactory, path, options, pipeline) {
+    return nextFactory(path, options, function (childContext) {
+        childContext.send = this._client_send.bind(childContext);
+        childContext.observe = this._client_observe.bind(childContext);
+        childContext[IOPA.Events].on(IOPAEVENTS.Response, this.client_invokeOnResponse.bind(this, childContext));
+        return pipeline(childContext);
+    });
 };
 
+/**
+ * @method send
+ * @this context IOPA context dictionary
+ * @param buf   optional data to write
+ */
+ClientSend.prototype._send = function ClientSend_send(context, path, options, buf){
+    options = options || {};
+    options[IOPA.Body] = new iopaStream.OutgoingStream(buf);
+    return context[SERVER.Fetch](path, options, function(){
+         return new Promise(function(resolve, reject){
+                context["clientSend.Done"] = resolve;
+            }); 
+    });
+};
 
 /**
  * @method _client_send
  * @this context IOPA context dictionary
  * @param buf   optional data to write
  */
-ClientSend.prototype._client_send = function ClientSend_client_send(buf){
-    var context = this;
-    return new Promise(function(resolve, reject){
-        context["clientSend.Done"] = resolve;
-        context["iopa.Body"].end(buf);
-    }); 
-};
-
-/**
- * @method _client_send
- * @this context IOPA context dictionary
- * @param buf   optional data to write
- */
-ClientSend.prototype._client_observe = function ClientSend_client_observe(callback){
-    var context = this;
-    return new Promise(function(resolve, reject){
-        context["clientSend.ObserveCallback"] = callback;
-        context["iopa.Body"].end();
-    }); 
+ClientSend.prototype._observe = function ClientSend_observe(context, path, options, callback){
+    options = options || {};
+    options[IOPA.Body] = new iopaStream.OutgoingNoPayloadStream();
+    return context[SERVER.Fetch](path, options, function(){
+         return new Promise(function(resolve, reject){
+                context["clientSend.ObserveCallback"] = callback;
+                context[IOPA.CallCancelled].onCancelled(resolve);
+                context[IOPA.Events].on(IOPAEVENTS.Finish, resolve);
+                context[IOPA.Events].on(IOPAEVENTS.Disconnect, resolve);
+            }); 
+    });
 };
 
 /**

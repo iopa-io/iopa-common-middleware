@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2015 Limerun Project Contributors
- * Portions Copyright (c) 2015 Internet of Protocols Assocation (IOPA)
+ * Copyright (c) 2015 Internet of Protocols Alliance (IOPA)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +14,21 @@
  * limitations under the License.
  */
 
+// DEPENDENCIES
+const constants = require('iopa').constants,
+    IOPA = constants.IOPA,
+    SERVER = constants.SERVER,
+    METHODS = constants.METHODS,
+    PORTS = constants.PORTS,
+    SCHEMES = constants.SCHEMES,
+    PROTOCOLS = constants.PROTOCOLS,
+    IOPAEVENTS = constants.EVENTS,
+    APP = constants.APP,
+    COMMONKEYS = constants.COMMONKEYS,
+    OPAQUE = constants.OPAQUE,
+    WEBSOCKET = constants.WEBSOCKET,
+    SECURITY = constants.SECURITY;
+
 /**
  * IOPA Middleware 
  *
@@ -24,7 +38,7 @@
  * @public
  */
 function BackForth(app) {
-     app.properties["server.Capabilities"]["BackForth.Version"] = "1.0";
+     app.properties[SERVER.Capabilities]["backForth.Version"] = "1.0";
 }
 
 /**
@@ -33,7 +47,7 @@ function BackForth(app) {
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 BackForth.prototype.invoke = function BackForth_invoke(context, next) {
-    context["server.CreateRequest"] = this._client_createRequest.bind(this, context, context["server.CreateRequest"]);
+    context[SERVER.Fetch] = this._client_fetch.bind(this, context, context[SERVER.Fetch]);
     context["iopa.Events"].on("response", this._client_invokeOnParentResponse.bind(this, context));
     return next();
 };
@@ -41,17 +55,18 @@ BackForth.prototype.invoke = function BackForth_invoke(context, next) {
 /**
  * Context Func(tion) to create a new IOPA Request using a Tcp Url including host and port name
  *
- * @method createRequest
+ * @method _client_fetch
 
  * @parm {string} path url representation of ://127.0.0.1/hello
  * @parm {string} [method]  request method (e.g. 'GET')
  * @returns {Promise(context)}
  * @public
  */
-BackForth.prototype._client_createRequest = function BackForth_client_createRequest(parentContext, nextFactory, path, method){
-    var childContext = nextFactory(path, method);
-    parentContext["server.currentChild"] = childContext;
-    return childContext;
+BackForth.prototype._client_fetch = function BackForth_client_fetch(parentContext, nextFactory, path, options, pipeline){
+    return nextFactory(path, options, function(childContext){
+         parentContext["backForth.CurrentChild"] = childContext;
+         return pipeline(childContext);
+    });
 };
 
 /**
@@ -63,8 +78,8 @@ BackForth.prototype._client_createRequest = function BackForth_client_createRequ
 BackForth.prototype._client_invokeOnParentResponse = function BackForth_client_invokeOnParentResponse(parentContext, context) {
     if("server.currentChild" in parentContext)
    {
-        var childRequest = parentContext["server.currentChild"];
-        childRequest["iopa.Events"].emit("response", context);
+        var childRequest = parentContext["backForth.CurrentChild"];
+        childRequest[IOPA.Events].emit("response", context);
    }
 };
 
