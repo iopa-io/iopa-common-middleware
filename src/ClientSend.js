@@ -56,9 +56,10 @@ ClientSend.prototype.invoke = function ClientSend_invoke(channelContext, next) {
  * @returns {Promise(context)}
  * @public
  */
-ClientSend.prototype._fetch = function ClientSend_fetch(channelContext, nextFactory, path, options, pipeline) {
-    return nextFactory(path, options, function (childContext) {
-        childContext[IOPA.Events].on(IOPA.EVENTS.Response, this.client_invokeOnResponse.bind(this, childContext));
+ClientSend.prototype._fetch = function ClientSend_fetch(channelContext, nextFetch, path, options, pipeline) {
+    var that = this;
+    return nextFetch(path, options, function (childContext) {
+        childContext[IOPA.Events].on(IOPA.EVENTS.Response, that.client_invokeOnResponse.bind(this, childContext));
         return pipeline(childContext);
     });
 };
