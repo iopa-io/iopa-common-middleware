@@ -16,17 +16,7 @@
       
  const constants = require('iopa').constants,
     IOPA = constants.IOPA,
-    SERVER = constants.SERVER,
-    METHODS = constants.METHODS,
-    PORTS = constants.PORTS,
-    SCHEMES = constants.SCHEMES,
-    PROTOCOLS = constants.PROTOCOLS,
-    IOPAEVENTS = constants.EVENTS,
-    APP = constants.APP,
-    COMMONKEYS = constants.COMMONKEYS,
-    OPAQUE = constants.OPAQUE,
-    WEBSOCKET = constants.WEBSOCKET,
-    SECURITY = constants.SECURITY;
+    SERVER = constants.SERVER
     
  const iopaStream = require('iopa-common-stream');
         
@@ -70,7 +60,7 @@ ClientSend.prototype._fetch = function ClientSend_fetch(context, nextFactory, pa
     return nextFactory(path, options, function (childContext) {
         childContext.send = this._client_send.bind(childContext);
         childContext.observe = this._client_observe.bind(childContext);
-        childContext[IOPA.Events].on(IOPAEVENTS.Response, this.client_invokeOnResponse.bind(this, childContext));
+        childContext[IOPA.Events].on(IOPA.EVENTS.Response, this.client_invokeOnResponse.bind(this, childContext));
         return pipeline(childContext);
     });
 };
@@ -102,8 +92,8 @@ ClientSend.prototype._observe = function ClientSend_observe(context, path, optio
          return new Promise(function(resolve, reject){
                 context["clientSend.ObserveCallback"] = callback;
                 context[IOPA.CallCancelled].onCancelled(resolve);
-                context[IOPA.Events].on(IOPAEVENTS.Finish, resolve);
-                context[IOPA.Events].on(IOPAEVENTS.Disconnect, resolve);
+                context[IOPA.Events].on(IOPA.EVENTS.Finish, resolve);
+                context[IOPA.Events].on(IOPA.EVENTS.Disconnect, resolve);
             }); 
     });
 };

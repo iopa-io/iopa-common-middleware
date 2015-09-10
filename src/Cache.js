@@ -19,17 +19,8 @@ var iopaStream = require('iopa-common-stream');
 
 const constants = require('iopa').constants,
     IOPA = constants.IOPA,
-    SERVER = constants.SERVER,
-    METHODS = constants.METHODS,
-    PORTS = constants.PORTS,
-    SCHEMES = constants.SCHEMES,
-    PROTOCOLS = constants.PROTOCOLS,
-    IOPAEVENTS = constants.EVENTS,
-    APP = constants.APP,
-    COMMONKEYS = constants.COMMONKEYS,
-    OPAQUE = constants.OPAQUE,
-    WEBSOCKET = constants.WEBSOCKET,
-    SECURITY = constants.SECURITY;
+    SERVER = constants.SERVER
+
 
 // GLOBALS
 
@@ -144,7 +135,7 @@ Cache.prototype._write = function Cache_write(context, nextStream, chunk, encodi
      } else
      
    //  context["cache.DoNotCache"] = true;
-     context[IOPA.Events].on(IOPAEVENTS.Finish, this._closeContext.bind(this, context));
+     context[IOPA.Events].on(IOPA.EVENTS.Finish, this._closeContext.bind(this, context));
      nextStream.write(chunk, encoding, callback);
 };
 
@@ -190,7 +181,7 @@ CacheMatch.prototype.db = function() {
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 CacheMatch.prototype.invoke = function CacheMatch_invoke(channelContext, next) {
-    channelContext[IOPA.Events].on(IOPAEVENTS.Response, this._client_invokeOnParentResponse.bind(this, channelContext));
+    channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, channelContext));
     return next();
 };
 
@@ -211,10 +202,10 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
    
     var cachedOriginal = _db.peek(key);
     
-    if (context["iopa.Token"])
+    if (context[IOPA.Token])
     {
         if (!cachedOriginal) {  
-            if (context["iopa.Token"])
+            if (context[IOPA.Token])
             {
             key = cacheKeyToken(context);
             cachedOriginal = _db.peek(key);
@@ -231,7 +222,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
     if (cachedOriginal) {
               if (cachedOriginal[IOPA.Events]) {
              // TRANSFER ONTO EVENTS PIPELINE    
-              cachedOriginal[IOPA.Events].emit(IOPAEVENTS.Response, context); 
+              cachedOriginal[IOPA.Events].emit(IOPA.EVENTS.Response, context); 
         } else
          {
            context.log.info("[IOPA_CACHE_MATCH] TOO LATE FOR PIPELINE " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);

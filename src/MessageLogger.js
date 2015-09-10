@@ -19,17 +19,7 @@ const util = require('util'),
     
 const constants = require('iopa').constants,
     IOPA = constants.IOPA,
-    SERVER = constants.SERVER,
-    METHODS = constants.METHODS,
-    PORTS = constants.PORTS,
-    SCHEMES = constants.SCHEMES,
-    PROTOCOLS = constants.PROTOCOLS,
-    IOPAEVENTS = constants.EVENTS,
-    APP = constants.APP,
-    COMMONKEYS = constants.COMMONKEYS,
-    OPAQUE = constants.OPAQUE,
-    WEBSOCKET = constants.WEBSOCKET,
-    SECURITY = constants.SECURITY;
+    SERVER = constants.SERVER
 
 /**
  * IOPA Middleware:  Log each incoming message
@@ -54,7 +44,7 @@ MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {
     else if (!context[SERVER.IsLocalOrigin])
         context.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(this._writeResponse.bind(this, context, context.response[SERVER.RawStream]));
 
-    context[IOPA.Events].on(IOPAEVENTS.Response, this._invokeOnParentResponse.bind(this, context));
+    context[IOPA.Events].on(IOPA.EVENTS.Response, this._invokeOnParentResponse.bind(this, context));
 
     if (context[SERVER.IsLocalOrigin] && context[SERVER.IsRequest]) {
         context.log.info("[IOPA] REQUEST OUT " + _requestLog(context))

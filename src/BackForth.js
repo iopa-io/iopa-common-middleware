@@ -17,18 +17,8 @@
 // DEPENDENCIES
 const constants = require('iopa').constants,
     IOPA = constants.IOPA,
-    SERVER = constants.SERVER,
-    METHODS = constants.METHODS,
-    PORTS = constants.PORTS,
-    SCHEMES = constants.SCHEMES,
-    PROTOCOLS = constants.PROTOCOLS,
-    IOPAEVENTS = constants.EVENTS,
-    APP = constants.APP,
-    COMMONKEYS = constants.COMMONKEYS,
-    OPAQUE = constants.OPAQUE,
-    WEBSOCKET = constants.WEBSOCKET,
-    SECURITY = constants.SECURITY;
-
+    SERVER = constants.SERVER
+  
 /**
  * IOPA Middleware 
  *
@@ -48,7 +38,7 @@ function BackForth(app) {
  */
 BackForth.prototype.invoke = function BackForth_invoke(context, next) {
     context[SERVER.Fetch] = this._client_fetch.bind(this, context, context[SERVER.Fetch]);
-    context["iopa.Events"].on("response", this._client_invokeOnParentResponse.bind(this, context));
+    context[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, context));
     return next();
 };
 
@@ -79,7 +69,7 @@ BackForth.prototype._client_invokeOnParentResponse = function BackForth_client_i
     if("server.currentChild" in parentContext)
    {
         var childRequest = parentContext["backForth.CurrentChild"];
-        childRequest[IOPA.Events].emit("response", context);
+        childRequest[IOPA.Events].emit(IOPA.EVENTS.Response, context);
    }
 };
 
