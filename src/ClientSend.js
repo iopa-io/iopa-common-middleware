@@ -70,6 +70,9 @@ ClientSend.prototype._fetch = function ClientSend_fetch(channelContext, nextFetc
  * @param buf   optional data to write
  */
 ClientSend.prototype._send = function ClientSend_send(channelContext, path, options, buf){
+     if (typeof options === 'string' || options instanceof String)
+       options = { "iopa.Method": options};
+   
     options = options || {};
     options[IOPA.Body] = new iopaStream.OutgoingStream(buf);
     return channelContext[SERVER.Fetch](path, options, function(childContext){
@@ -84,15 +87,18 @@ ClientSend.prototype._send = function ClientSend_send(channelContext, path, opti
  * @this context IOPA context dictionary
  * @param buf   optional data to write
  */
-ClientSend.prototype._observe = function ClientSend_observe(context, path, options, callback){
+ClientSend.prototype._observe = function ClientSend_observe(channelContext, path, options, callback){
+     if (typeof options === 'string' || options instanceof String)
+       options = { "iopa.Method": options};
+   
     options = options || {};
     options[IOPA.Body] = new iopaStream.OutgoingNoPayloadStream();
-    return context[SERVER.Fetch](path, options, function(){
+    return channelContext[SERVER.Fetch](path, options, function(){
          return new Promise(function(resolve, reject){
-                context["clientSend.ObserveCallback"] = callback;
-                context[IOPA.CallCancelled].onCancelled(resolve);
-                context[IOPA.Events].on(IOPA.EVENTS.Finish, resolve);
-                context[IOPA.Events].on(IOPA.EVENTS.Disconnect, resolve);
+                channelContext["clientSend.ObserveCallback"] = callback;
+                channelContext[IOPA.CallCancelled].onCancelled(resolve);
+                channelContext[IOPA.Events].on(IOPA.EVENTS.Finish, resolve);
+                channelContext[IOPA.Events].on(IOPA.EVENTS.Disconnect, resolve);
             }); 
     });
 };
