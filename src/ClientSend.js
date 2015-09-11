@@ -104,12 +104,12 @@ ClientSend.prototype._observe = function ClientSend_observe(context, path, optio
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 ClientSend.prototype.client_invokeOnResponse = function ClientSend_client_invokeOnResponse(context, responseContext) {
-    if ("clientSend.Done" in context)
+     if (context["clientSend.Done"])
     {
        context["clientSend.Done"](responseContext);
     }
-    
-     if ("clientSend.ObserveCallback" in context)
+       
+     if (context["clientSend.ObserveCallback"])
        context["clientSend.ObserveCallback"](responseContext);
 };
 
