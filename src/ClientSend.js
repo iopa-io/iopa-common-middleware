@@ -59,7 +59,7 @@ ClientSend.prototype.invoke = function ClientSend_invoke(channelContext, next) {
 ClientSend.prototype._fetch = function ClientSend_fetch(channelContext, nextFetch, path, options, pipeline) {
     var that = this;
     return nextFetch(path, options, function (childContext) {
-        childContext[IOPA.Events].on(IOPA.EVENTS.Response, that.client_invokeOnResponse.bind(this, childContext));
+        channelContext[IOPA.Events].on(IOPA.EVENTS.Response, that.client_invokeOnResponse.bind(this, childContext));
         return pipeline(childContext);
     });
 };
@@ -69,12 +69,12 @@ ClientSend.prototype._fetch = function ClientSend_fetch(channelContext, nextFetc
  * @this context IOPA context dictionary
  * @param buf   optional data to write
  */
-ClientSend.prototype._send = function ClientSend_send(context, path, options, buf){
+ClientSend.prototype._send = function ClientSend_send(channelContext, path, options, buf){
     options = options || {};
     options[IOPA.Body] = new iopaStream.OutgoingStream(buf);
-    return context[SERVER.Fetch](path, options, function(){
+    return channelContext[SERVER.Fetch](path, options, function(childContext){
          return new Promise(function(resolve, reject){
-                context["clientSend.Done"] = resolve;
+                childContext["clientSend.Done"] = resolve;
             }); 
     });
 };
