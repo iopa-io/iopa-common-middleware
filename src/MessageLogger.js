@@ -24,37 +24,62 @@ const constants = require('iopa').constants,
 /**
  * IOPA Middleware:  Log each incoming message
  *
- * @class AuditLog
- * @this app.properties  the IOPA AppBuilder Properties Dictionary
- * @constructor
- */
-function MessageLogger(app) {
-
-    app.properties[SERVER.Capabilities]["Log.Version"] = "1.0";
-}
-
-/**
- * @method invoke
- * @this context IOPA context dictionary
+  * @this context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {
-    if (!context[SERVER.IsRequest] && context[SERVER.IsLocalOrigin])
-        context[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(this._writeResponse.bind(this, context, context[SERVER.RawStream]));
-    else if (!context[SERVER.IsLocalOrigin])
-        context.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(this._writeResponse.bind(this, context, context.response[SERVER.RawStream]));
-
-    context[IOPA.Events].on(IOPA.EVENTS.Response, this._invokeOnParentResponse.bind(this, context));
-
-    if (context[SERVER.IsLocalOrigin] && context[SERVER.IsRequest]) {
-        context.log.info("[IOPA] REQUEST OUT " + _requestLog(context))
-        return next();
-    } else if (context["server.IsRequest"]) {
+function MessageLogger(context, next) {
+    
+    // HOOK INTO TO CHANNEL CONTEXT
+    if (context[SERVER.ParentContext] && !context[SERVER.ParentContext]["MessageLogger.Hooked"])
+       MessageLogger(context[SERVER.ParentContext], false); 
+    
+    context["MessageLogger.Hooked"]=true;
+      
+    // HOOK INTO CLIENT FETCHES
+    if (context[SERVER.Fetch]) 
+       context[SERVER.Fetch] = _fetch.bind(this, context, context[SERVER.Fetch]);
+    
+    context[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, context));
+    
+    if (next)
+    {
+        // HOOK INTO RESPONSE STREAM
+        context.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeResponse.bind(this, context.response, context.response[SERVER.RawStream]));
         context.log.info("[IOPA] REQUEST IN " + _requestLog(context))
         return next();
-    };
-    // IGNORE ALL OTHER
-    return next();
+    }
+};
+
+/**
+ * @method connect
+ * @this context IOPA context dictionary
+ */
+MessageLogger.connect = function MessageLogger_connect(context) {
+         
+    // HOOK INTO CLIENT FETCHES
+    if (context[SERVER.Fetch]) 
+       context[SERVER.Fetch] = _fetch.bind(this, context, context[SERVER.Fetch]);
+    
+    context[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, context));
+    
+};
+
+/**
+ * Context Func(tion) to create a new IOPA Request using a Tcp Url including host and port name
+ *
+ * @method fetch
+
+ * @parm  path url representation of ://127.0.0.1/hello
+ * @param options object dictionary to override defaults
+ * @param pipeline function(context):Promise  to call with context record
+ * @returns {Promise(context)}
+ * @public
+ */
+function _fetch(channelContext, nextFetch, path, options, pipeline) {
+    return nextFetch(path, options, function (childContext) {
+           childContext[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeRequest.bind(this, childContext, childContext[SERVER.RawStream]));
+          return pipeline(childContext);
+    });
 };
 
 /**
@@ -64,7 +89,7 @@ MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {
  * @param context IOPA childResponse context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-MessageLogger.prototype._invokeOnParentResponse = function MessageLogger_invokeOnParentResponse(channelContext, context) {
+function _invokeOnParentResponse(channelContext, context) {
     context.log.info("[IOPA] RESPONSE IN " + _responseLog(context))
 };
 
@@ -77,11 +102,26 @@ MessageLogger.prototype._invokeOnParentResponse = function MessageLogger_invokeO
  * @param callback Function Callback for when this chunk of data is flushed
  * @private
 */
-MessageLogger.prototype._writeResponse = function _MessageLogger_writeResponse(context, nextStream, chunk, encoding, callback) {
+function _writeResponse(context, nextStream, chunk, encoding, callback) {
     if (!context[SERVER.IsLocalOrigin])
-        context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context.response));
-    else
         context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context));
+    else
+        context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context.response));
+
+    nextStream.write(chunk, encoding, callback);
+};
+
+/**
+ * @method _write
+ * @param context IOPA context dictionary
+ * @param nextStream Stream The raw stream saved that is next in chain for writing
+ * @param chunk     String | Buffer The data to write
+ * @param encoding String The encoding, if chunk is a String
+ * @param callback Function Callback for when this chunk of data is flushed
+ * @private
+*/
+function _writeRequest(context, nextStream, chunk, encoding, callback) {
+     context.log.info("[IOPA] REQUEST OUT " + _requestLog(context));
 
     nextStream.write(chunk, encoding, callback);
 };

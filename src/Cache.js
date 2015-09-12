@@ -221,8 +221,9 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
 
     if (cachedOriginal) {
               if (cachedOriginal[IOPA.Events]) {
-             // TRANSFER ONTO EVENTS PIPELINE    
-              cachedOriginal[IOPA.Events].emit(IOPA.EVENTS.Response, context); 
+             // TRANSFER ONTO EVENTS PIPELINE
+             cachedOriginal[IOPA.Events].emit(IOPA.EVENTS.Response, context);
+               
         } else
          {
            context.log.info("[IOPA_CACHE_MATCH] TOO LATE FOR PIPELINE " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
