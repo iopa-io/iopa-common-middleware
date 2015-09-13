@@ -231,7 +231,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
          }
     } else
          {
-                context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
+      //          context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
                // silently ignore    TODO: Transfer to a different pipeline
          }
 };
