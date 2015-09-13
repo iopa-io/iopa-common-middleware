@@ -91,6 +91,10 @@ function _fetch(channelContext, nextFetch, path, options, pipeline) {
  */
 function _invokeOnParentResponse(channelContext, context) {
     context.log.info("[IOPA] RESPONSE IN " + _responseLog(context))
+    
+       // HOOK INTO RESPONSE STREAM
+        context.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeResponse.bind(this, context.response, context.response[SERVER.RawStream]));
+   
 };
 
 /**
@@ -138,7 +142,7 @@ function _url(context) {
 function _requestLog(context) {
     return context[IOPA.Method] + " " + context[IOPA.MessageId] + ":" + context[IOPA.Seq] + " "
         + _url(context)
-        + "  " + context[IOPA.Body].toString();
+        + "  " + ((context[IOPA.Body] !== null) ? context[IOPA.Body].toString() : "");
 }
 
 function _responseLog(response, chunk) {
@@ -148,7 +152,7 @@ function _responseLog(response, chunk) {
         + response[IOPA.ReasonPhrase]
         + " [" + response[SERVER.RemoteAddress]
         + ":" + response[SERVER.RemotePort] + "]" + "  "
-        + response[IOPA.Body].toString();
+        + ((response[IOPA.Body] !== null) ? response[IOPA.Body].toString() : "");
 }
 
 module.exports = MessageLogger;
