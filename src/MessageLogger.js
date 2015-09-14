@@ -107,11 +107,7 @@ function _invokeOnParentResponse(channelContext, context) {
  * @private
 */
 function _writeResponse(context, nextStream, chunk, encoding, callback) {
-    if (!context[SERVER.IsLocalOrigin])
-        context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context));
-    else
-        context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context.response));
-
+    context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context));
     nextStream.write(chunk, encoding, callback);
 };
 
