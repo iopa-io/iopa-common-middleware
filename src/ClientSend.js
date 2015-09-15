@@ -93,12 +93,13 @@ ClientSend.prototype._observe = function ClientSend_observe(channelContext, path
    
     options = options || {};
     options[IOPA.Body] = new iopaStream.OutgoingNoPayloadStream();
-    return channelContext[SERVER.Fetch](path, options, function(){
+    return channelContext[SERVER.Fetch](path, options, function(childContext){
          return new Promise(function(resolve, reject){
-                channelContext["clientSend.ObserveCallback"] = callback;
-                channelContext[IOPA.CallCancelled].onCancelled(resolve);
-                channelContext[IOPA.Events].on(IOPA.EVENTS.Finish, resolve);
-                channelContext[IOPA.Events].on(IOPA.EVENTS.Disconnect, resolve);
+                childContext["clientSend.ObserveCallback"] = callback;
+                childContext["clientSend.Done"] = resolve;
+                childContext[IOPA.CallCancelled].onCancelled(resolve);
+                childContext[IOPA.Events].on(IOPA.EVENTS.Finish, resolve);
+                childContext[IOPA.Events].on(IOPA.EVENTS.Disconnect, resolve);
             }); 
     });
 };
@@ -113,6 +114,7 @@ ClientSend.prototype.client_invokeOnResponse = function ClientSend_client_invoke
      if (context["clientSend.Done"])
     {
        context["clientSend.Done"](responseContext);
+       context["clientSend.Done"] = null;
     }
        
      if (context["clientSend.ObserveCallback"])
