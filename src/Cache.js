@@ -212,28 +212,28 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
             }
         } else {
             if (context[IOPA.Token] && cachedOriginal[IOPA.Token] &&
-             (context[IOPA.Token] !== cachedOriginal[IOPA.Token]))
-             {
+                (context[IOPA.Token] !== cachedOriginal[IOPA.Token])) {
                 cachedOriginal = undefined;
-              }
+            }
         }
     }
 
     if (cachedOriginal) {
-              if (cachedOriginal[IOPA.Events]) {
-             // TRANSFER ONTO EVENTS PIPELINE
-             cachedOriginal[IOPA.Events].emit(IOPA.EVENTS.Response, context);
-               
-        } else
-         {
-           context.log.info("[IOPA_CACHE_MATCH] TOO LATE FOR PIPELINE " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
-               // silently ignore  TODO: Transfer to a different pipeline
-         }
-    } else
-         {
-      //          context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
-               // silently ignore    TODO: Transfer to a different pipeline
-         }
+        if (cachedOriginal[IOPA.Events]) {
+            // context.log.info("[IOPA_CACHE_MATCH] MATCHED " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.Seq] +"=" + cachedOriginal[IOPA.Seq]);
+           
+            // TRANSFER ONTO EVENTS PIPELINE
+            
+            cachedOriginal[IOPA.Events].emit(IOPA.EVENTS.Response, context);
+
+        } else {
+            context.log.info("[IOPA_CACHE_MATCH] TOO LATE FOR PIPELINE " + context[IOPA.Method] + " " + context[IOPA.MessageId] + ":" + context[IOPA.Seq]);
+            // silently ignore  TODO: Transfer to a different pipeline
+        }
+    } else {
+        // context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
+        // silently ignore    TODO: Transfer to a different pipeline
+    }
 };
 
 module.exports.Match = CacheMatch;

@@ -39,7 +39,7 @@ function MessageLogger(context, next) {
     if (context[SERVER.Fetch]) 
        context[SERVER.Fetch] = _fetch.bind(this, context, context[SERVER.Fetch]);
     
-    context[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, context));
+ //   context[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, context));
     
     if (next)
     {
