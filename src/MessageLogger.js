@@ -89,11 +89,11 @@ function _fetch(channelContext, nextFetch, path, options, pipeline) {
  * @param context IOPA childResponse context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-function _invokeOnParentResponse(channelContext, context) {
-    context.log.info("[IOPA] RESPONSE IN " + _responseLog(context))
+function _invokeOnParentResponse(parentContext, response) {
+    response.log.info("[IOPA] RESPONSE IN " + _responseLog(response))
     
        // HOOK INTO RESPONSE STREAM
-        context.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeResponse.bind(this, context.response, context.response[SERVER.RawStream]));
+    response.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeResponse.bind(this, response.response, response.response[SERVER.RawStream]));
    
 };
 
