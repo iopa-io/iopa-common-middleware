@@ -35,11 +35,6 @@ describe('#ClientSend()', function() {
     });
 });
 
-describe('#MessageLogger()', function() {
-     it('should have MessageLogger', function() {
-         iopaMiddleware.should.have.property("MessageLogger");
-    });
-});
 
 
 // TO DO ACTUALLY TEST THE MIDDLEWARE NOT JUST CHECK FOR IT

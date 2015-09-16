@@ -20,6 +20,13 @@ var iopaStream = require('iopa-common-stream');
 const constants = require('iopa').constants,
     IOPA = constants.IOPA,
     SERVER = constants.SERVER
+    
+const CACHE = {CAPABILITY: "urn:io.iopa:Cache",
+     DB: "cache.Db",
+     DONOTCACHE: "cache.DoNotCache"
+      }
+ 
+ const packageVersion = require('../package.json').version;
 
 
 // GLOBALS
@@ -79,10 +86,10 @@ function cacheKeyToken(context) {
  * @public
  */
 function Cache(app) {
-      if (!app.properties[SERVER.Capabilities]["cache.Version"])
+      if (!app.properties[SERVER.Capabilities][CACHE.CAPABILITY])
         throw ("Missing Dependency:  cache Server/Middleware in Pipeline");
 
-    this._db = app.properties[SERVER.Capabilities]["cache.Support"]["cache.db"]();
+    this._db = app.properties[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.DB]();
 }
 
 /**
@@ -114,7 +121,7 @@ Cache.prototype.invoke = function Cache_invoke(context, next) {
 */
 Cache.prototype._write = function Cache_write(context, nextStream, chunk, encoding, callback) {
    
-     if (!context["cache.DoNotCache"]) 
+     if (!context[CACHE.CAPABILITY][CACHE.DONOTCACHE]) 
      {
          var cacheData = {};
             cacheData[SERVER.IsLocalOrigin] = context[SERVER.IsLocalOrigin];
@@ -134,7 +141,7 @@ Cache.prototype._write = function Cache_write(context, nextStream, chunk, encodi
             } 
      } else
      
-   //  context["cache.DoNotCache"] = true;
+   //  context[CACHE.CAPABILITY][CACHE.DONOTCACHE] = true;
      context[IOPA.Events].on(IOPA.EVENTS.Finish, this._closeContext.bind(this, context));
      nextStream.write(chunk, encoding, callback);
 };
@@ -150,8 +157,6 @@ Cache.prototype._closeContext = function Cache_close(context, key) {
 
 module.exports.Cache = Cache;
 
-
-
 /* *********************************************************
  * IOPA MIDDLEWARE: CACHE MIDDLEWARE SERVER EXTENSIONS
  * ********************************************************* */
@@ -164,16 +169,10 @@ module.exports.Cache = Cache;
  * @public
  */
 function CacheMatch(app) {
-    
-    app.properties[SERVER.Capabilities]["cache.Version"] = "1.0";
-    app.properties[SERVER.Capabilities]["cache.Support"] = {
-        "cache.db": this.db
-    };
+     app.properties[SERVER.Capabilities][CACHE.CAPABILITY] = {};
+     app.properties[SERVER.Capabilities][CACHE.CAPABILITY][SERVER.Version] = packageVersion;
+     app.properties[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.DB] = function() { return _db; };
 }
-
-CacheMatch.prototype.db = function() {
-    return _db;
-};
 
 /**
  * @method invoke

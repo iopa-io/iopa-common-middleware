@@ -18,6 +18,12 @@
 const constants = require('iopa').constants,
     IOPA = constants.IOPA,
     SERVER = constants.SERVER
+    
+        
+const BACKFORTH = {CAPABILITY: "urn:io.iopa:BackForth",
+          }
+ 
+ const packageVersion = require('../package.json').version;
   
 /**
  * IOPA Middleware 
@@ -28,7 +34,8 @@ const constants = require('iopa').constants,
  * @public
  */
 function BackForth(app) {
-     app.properties[SERVER.Capabilities]["backForth.Version"] = "1.0";
+     app.properties[SERVER.Capabilities][BACKFORTH.CAPABILITY] = {};
+     app.properties[SERVER.Capabilities][BACKFORTH.CAPABILITY][SERVER.Version] = packageVersion;
 }
 
 /**

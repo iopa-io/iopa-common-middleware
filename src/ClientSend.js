@@ -19,6 +19,14 @@
     SERVER = constants.SERVER
     
  const iopaStream = require('iopa-common-stream');
+ 
+ const CLIENTSEND = {
+     CAPABILITY: "urn:io.iopa:ClientSend",
+     DONE: "clientSend.Done",
+     OBSERVE: "clientSend.Observe"
+     }
+ 
+ const packageVersion = require('../package.json').version;
         
 /**
  * IOPA Middleware 
@@ -29,7 +37,8 @@
  * @public
  */
 function ClientSend(app) {
-     app.properties[SERVER.Capabilities]["clientSend.Version"] = "1.0";
+     app.properties[SERVER.Capabilities][CLIENTSEND.CAPABILITY] = {};
+     app.properties[SERVER.Capabilities][CLIENTSEND.CAPABILITY][SERVER.Version] = packageVersion;
 }
 
 /**
@@ -77,7 +86,7 @@ ClientSend.prototype._send = function ClientSend_send(channelContext, path, opti
     options[IOPA.Body] = new iopaStream.OutgoingStream(buf);
     return channelContext[SERVER.Fetch](path, options, function(childContext){
          return new Promise(function(resolve, reject){
-                childContext["clientSend.Done"] = resolve;
+                childContext[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.DONE] = resolve;
             }); 
     });
 };
@@ -95,7 +104,7 @@ ClientSend.prototype._observe = function ClientSend_observe(channelContext, path
     options[IOPA.Body] = new iopaStream.OutgoingNoPayloadStream();
     return channelContext[SERVER.Fetch](path, options, function(childContext){
           return new Promise(function(resolve, reject){
-                childContext["clientSend.ObserveCallback"] = callback;
+                childContext[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.OBSERVE] = callback;
                 channelContext[IOPA.Events].on(IOPA.EVENTS.Disconnect, resolve);
                 channelContext[IOPA.Events].on(IOPA.EVENTS.Finish, resolve);     
             }); 
@@ -109,17 +118,16 @@ ClientSend.prototype._observe = function ClientSend_observe(channelContext, path
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 ClientSend.prototype.client_invokeOnResponse = function ClientSend_client_invokeOnResponse(context, responseContext) {
-     if (context["clientSend.Done"])
-    {
-      
-       context["clientSend.Done"](responseContext);
-       context["clientSend.Done"] = null;
+
+    if (context[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.DONE]) {
+        context[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.DONE](responseContext);
+        context[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.DONE] = null;
     }
-       
-     if (context["clientSend.ObserveCallback"]) 
-      {
-       context["clientSend.ObserveCallback"](responseContext);
-      }
+
+    if (context[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.OBSERVE]) {
+        context[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.OBSERVE](responseContext);
+    }
+
 };
 
 module.exports = ClientSend;
