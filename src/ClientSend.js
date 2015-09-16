@@ -53,7 +53,6 @@ ClientSend.prototype.invoke = function ClientSend_invoke(channelContext, next) {
     return next();
 };
 
-
 /**
  * Context Func(tion) to create a new IOPA Request using a Tcp Url including host and port name
  *

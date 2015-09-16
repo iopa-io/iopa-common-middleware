@@ -13,28 +13,151 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-var iopaMiddleware = require('../index.js');
+  
+const iopaMiddleware = require('../index.js'),
+  stubServer = require('iopa-test').stubServer,
+  BackForth = require('../index.js').BackForth,
+    Cache = require('../index.js').Cache,
+    ClientSend = require('../index.js').ClientSend
+
+  
 var should = require('should');
+const iopa = require('iopa');
 
-describe('#BackForth()', function() {
-     it('should have BackForth', function() {
-         iopaMiddleware.should.have.property("BackForth");
+describe('#BackForth()', function () {
+    it('should have BackForth', function () {
+        iopaMiddleware.should.have.property("BackForth");
+    });
+
+    var seq = 0;
+
+    it('should use BackForth', function (done) {
+
+        var app = new iopa.App();
+
+        app.use(ClientSend);
+
+        app.use(function (context, next) {
+            context.response["server.RawStream"].end("HELLO WORLD " + seq++);
+            return next();
+        });
+
+        var server = stubServer.createServer(app.build())
+        var c = new ClientSend(app);
+        var b = new BackForth(app);
+        server.connectuse(c.invoke.bind(c));
+        server.connectuse(b.invoke.bind(b));
+
+        server.connect("urn://localhost").then(function (client) {
+
+
+
+            return client.send("/projector", "GET");
+        }).then(function () {
+            process.nextTick(function () {
+                done();
+            });
+        })
+
+
+
     });
 });
 
-describe('#Cache()', function() {
-     it('should have Cache', function() {
-         iopaMiddleware.should.have.property("Cache");
+describe('#Cache()', function () {
+    it('should have Cache', function () {
+        iopaMiddleware.should.have.property("Cache");
     });
+
+    var seq = 0;
+
+    it('should cache outgoing responses', function (done) {
+
+        var app = new iopa.App();
+
+        app.use(Cache.Match);
+        app.use(Cache.Cache);
+
+        app.use(function (context, next) {
+            context.response["server.RawStream"].end("HELLO WORLD " + seq++);
+            return next();
+        });
+
+        var server = stubServer.createServer(app.build())
+
+        server.receive("TEST");
+
+        process.nextTick(function () {
+            done();
+        });
+
+    })
+
+    it('should cache and match outgoing messages and responses', function (done) {
+
+        var app = new iopa.App();
+
+        app.use(Cache.Match);
+        app.use(Cache.Cache);
+        var c = new Cache.Cache(app)
+
+        app.use(function (context, next) {
+            context.response["server.RawStream"].end("HELLO WORLD " + seq++);
+            return next();
+        });
+
+        var server = stubServer.createServer(app.build())
+        server.connectuse(c.invoke.bind(c));
+
+        server.connect("urn://localhost").then(function (client) {
+            return client.fetch("/projector", "GET", function (context) {
+                context["server.RawStream"].end("HELLO WORLD " + seq++);
+            });
+        }).then(function () {
+            process.nextTick(function () {
+                done();
+            });
+        })
+
+
+    })
 });
 
-describe('#ClientSend()', function() {
-     it('should have ClientSend', function() {
-         iopaMiddleware.should.have.property("ClientSend");
+describe('#ClientSend()', function () {
+    it('should have ClientSend', function () {
+        iopaMiddleware.should.have.property("ClientSend");
     });
+
+    var seq = 0;
+
+    it('should send outgoing messages', function (done) {
+
+        var app = new iopa.App();
+
+        app.use(ClientSend);
+
+        app.use(function (context, next) {
+            context.response["server.RawStream"].end("HELLO WORLD " + seq++);
+            return next();
+        });
+
+        var server = stubServer.createServer(app.build())
+        var c = new ClientSend(app);
+        var b = new BackForth(app);
+        server.connectuse(c.invoke.bind(c));
+        server.connectuse(b.invoke.bind(b));
+
+        server.connect("urn://localhost").then(function (client) {
+
+
+
+            return client.send("/projector", "GET");
+        }).then(function () {
+            process.nextTick(function () {
+                done();
+            });
+        })
+
+
+    })
 });
-
-
-
-// TO DO ACTUALLY TEST THE MIDDLEWARE NOT JUST CHECK FOR IT

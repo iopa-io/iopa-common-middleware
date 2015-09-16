@@ -21,6 +21,7 @@ const constants = require('iopa').constants,
     
         
 const BACKFORTH = {CAPABILITY: "urn:io.iopa:BackForth",
+        CURRENTCHILD: "backForth.CurrentChild"
           }
  
  const packageVersion = require('../package.json').version;
@@ -61,7 +62,7 @@ BackForth.prototype.invoke = function BackForth_invoke(context, next) {
  */
 BackForth.prototype._client_fetch = function BackForth_client_fetch(parentContext, nextFactory, path, options, pipeline){
     return nextFactory(path, options, function(childContext){
-         parentContext["backForth.CurrentChild"] = childContext;
+         parentContext[SERVER.Capabilities][BACKFORTH.CAPABILITY][BACKFORTH.CURRENTCHILD] = childContext;
          return pipeline(childContext);
     });
 };
@@ -73,9 +74,9 @@ BackForth.prototype._client_fetch = function BackForth_client_fetch(parentContex
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 BackForth.prototype._client_invokeOnParentResponse = function BackForth_client_invokeOnParentResponse(parentContext, context) {
-    if("server.currentChild" in parentContext)
+    if(BACKFORTH.CURRENTCHILD in  parentContext[SERVER.Capabilities][BACKFORTH.CAPABILITY])
    {
-        var childRequest = parentContext["backForth.CurrentChild"];
+        var childRequest = parentContext[SERVER.Capabilities][BACKFORTH.CAPABILITY][BACKFORTH.CURRENTCHILD];
         childRequest[IOPA.Events].emit(IOPA.EVENTS.Response, context);
    }
 };

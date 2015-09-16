@@ -33,17 +33,7 @@ Includes:
 
   * Adds helper methods `.send()` and `.observe()` to IOPA context requests
   * These methods return a promise which complete on response
-  
-  
-### IOPA Log (middleware)
-
-  * Automatic audit logging of outbound and inbound requests and responses
-
-
-### IOPA Server (reference class)
-
-  * Base framework to write your own IoPA server (e.g., MQTT over TCP)
-  
+ 
     
 ## Installation
 
@@ -55,7 +45,6 @@ const iopa = require('iopa')
     , BackForth = require('iopa-common-middleware').BackForth
     , CacheMatch = require('iopa-common-middleware').Cache
     , ClientSend = require('iopa-common-middleware').ClientSend
-    , MessageLogger = require('iopa-common-middleware').MessageLogger
        
 function MyProtocolServer(options, appFunc) {
 
@@ -64,7 +53,6 @@ function MyProtocolServer(options, appFunc) {
 app.use(BackForth);
 app.use(CacheMatch.Cache);
 app.use(ClientSend);
-app.use(MessageLogger);
 
 :
 
