@@ -23,7 +23,8 @@ const constants = require('iopa').constants,
     
 const CACHE = {CAPABILITY: "urn:io.iopa:Cache",
      DB: "cache.Db",
-     DONOTCACHE: "cache.DoNotCache"
+     DONOTCACHE: "cache.DoNotCache",
+     MATCHED: "cache.Matched"
       }
  
  const packageVersion = require('../package.json').version;
@@ -132,7 +133,6 @@ Cache.prototype._writeServer = function Cache_write(context, nextStream, chunk, 
             cacheData[SERVER.RawStream] = context.response[SERVER.RawStream];
             cacheData[IOPA.Seq] = context.response[IOPA.Seq];
             cacheData[IOPA.MessageId] = context.response[IOPA.MessageId];
-                     
             var key = cacheKeyId(context.response);
             this._db.set(key, cacheData);
             
@@ -141,9 +141,8 @@ Cache.prototype._writeServer = function Cache_write(context, nextStream, chunk, 
                key = cacheKeyToken(context.response);
                this._db.set(key, cacheData);
             } 
-     } else
+     } ;
      
-   //  context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.DONOTCACHE] = true;
      context[IOPA.Events].on(IOPA.EVENTS.Finish, this._closeContext.bind(this, context.response));
      nextStream.write(chunk, encoding, callback);
 };
@@ -177,9 +176,8 @@ Cache.prototype._writeClient = function Cache_write(context, nextStream, chunk, 
                key = cacheKeyToken(context);
                this._db.set(key, cacheData);
             } 
-     } else
-     
-   //  context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.DONOTCACHE] = true;
+     } ;
+   
      context[IOPA.Events].on(IOPA.EVENTS.Finish, this._closeContext.bind(this, context));
      nextStream.write(chunk, encoding, callback);
 };
@@ -221,7 +219,8 @@ CacheMatch.prototype.invoke = function CacheMatch_invoke(channelContext, next) {
     channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, channelContext));
     return next();
 };
-
+ var seq = 0;
+   
 /**
  * @method _client_invokeOnParentResponse
  * @this CacheMatch
@@ -230,9 +229,10 @@ CacheMatch.prototype.invoke = function CacheMatch_invoke(channelContext, next) {
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client_invokeOnParentResponse(channelContext, context) {
-    // SERVER REQUESTS ONLY;  IGNORE CLIENT RESPONSES
-    //  if (!context[SERVER.IsRequest])
-    //    return next();
+    if (context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.MATCHED])
+    {   
+          return;
+        }
 
     //CHECK CACHE
     var key = cacheKeyId(context);
@@ -257,10 +257,10 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
 
     if (cachedOriginal) {
         if (cachedOriginal[IOPA.Events]) {
-            // context.log.info("[IOPA_CACHE_MATCH] MATCHED " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.Seq] +"=" + cachedOriginal[IOPA.Seq]);
+        //    context.log.info("[IOPA_CACHE_MATCH] MATCHED " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.Seq] +"=" + cachedOriginal[IOPA.Seq]);
            
             // TRANSFER ONTO EVENTS PIPELINE
-            
+           context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.MATCHED] = context[IOPA.Seq];
             cachedOriginal[IOPA.Events].emit(IOPA.EVENTS.Response, context);
 
         } else {
@@ -268,7 +268,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
             // silently ignore  TODO: Transfer to a different pipeline
         }
     } else {
-        // context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
+      //   context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
         // silently ignore    TODO: Transfer to a different pipeline
     }
 };
