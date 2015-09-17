@@ -103,11 +103,11 @@ Cache.prototype.invoke = function Cache_invoke(context, next) {
   if (context[SERVER.IsLocalOrigin])
   {
      // client
-      context[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(this._writeClient.bind(this, context, context["server.RawStream"])); 
+      context[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(this._write.bind(this, context, context["server.RawStream"])); 
      } 
   else
     // server
-     context.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(this._writeServer.bind(this, context, context.response["server.RawStream"])); 
+     context.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(this._write.bind(this, context.response, context.response["server.RawStream"])); 
       
   return next();
     
@@ -122,41 +122,7 @@ Cache.prototype.invoke = function Cache_invoke(context, next) {
  * @param callback Function Callback for when this chunk of data is flushed
  * @private
 */
-Cache.prototype._writeServer = function Cache_write(context, nextStream, chunk, encoding, callback) {
-   
-     if (!context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.DONOTCACHE]) 
-     {
-         var cacheData = {};
-            cacheData[SERVER.IsLocalOrigin] = context.response[SERVER.IsLocalOrigin];
-            cacheData[SERVER.CallCancelledSource] = context.response[SERVER.CallCancelledSource];
-            cacheData[IOPA.Events] = context[IOPA.Events];
-            cacheData[SERVER.RawStream] = context.response[SERVER.RawStream];
-            cacheData[IOPA.Seq] = context.response[IOPA.Seq];
-            cacheData[IOPA.MessageId] = context.response[IOPA.MessageId];
-            var key = cacheKeyId(context.response);
-            this._db.set(key, cacheData);
-            
-            if (context[IOPA.Token])
-            {
-               key = cacheKeyToken(context.response);
-               this._db.set(key, cacheData);
-            } 
-     } ;
-     
-     context[IOPA.Events].on(IOPA.EVENTS.Finish, this._closeContext.bind(this, context.response));
-     nextStream.write(chunk, encoding, callback);
-};
-
-/**
- * @method _write
- * @this context IOPA context dictionary
- * @param nextStream  Raw Stream to send transformed data to
- * @param chunk     String | Buffer The data to write
- * @param encoding String The encoding, if chunk is a String
- * @param callback Function Callback for when this chunk of data is flushed
- * @private
-*/
-Cache.prototype._writeClient = function Cache_write(context, nextStream, chunk, encoding, callback) {
+Cache.prototype._write = function Cache_write(context, nextStream, chunk, encoding, callback) {
    
      if (!context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.DONOTCACHE]) 
      {
@@ -167,8 +133,9 @@ Cache.prototype._writeClient = function Cache_write(context, nextStream, chunk, 
             cacheData[SERVER.RawStream] = context[SERVER.RawStream];
             cacheData[IOPA.Seq] = context[IOPA.Seq];
             cacheData[IOPA.MessageId] = context[IOPA.MessageId];
-                     
+              
             var key = cacheKeyId(context);
+            
             this._db.set(key, cacheData);
             
             if (context[IOPA.Token])
@@ -257,7 +224,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
 
     if (cachedOriginal) {
         if (cachedOriginal[IOPA.Events]) {
-        //    context.log.info("[IOPA_CACHE_MATCH] MATCHED " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.Seq] +"=" + cachedOriginal[IOPA.Seq]);
+        //  context.log.info("[IOPA_CACHE_MATCH] MATCHED " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.Seq] +"=" + cachedOriginal[IOPA.Seq]);
            
             // TRANSFER ONTO EVENTS PIPELINE
            context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.MATCHED] = context[IOPA.Seq];
