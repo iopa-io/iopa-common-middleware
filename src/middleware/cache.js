@@ -161,7 +161,6 @@ Cache.prototype._cache = function Cache_cache(context) {
               
             var key = cacheKeyId(context);
             this._db.set(key, cacheData);
-            
             if (context[IOPA.Token])
             {
                key = cacheKeyToken(context);
@@ -261,7 +260,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
 
     if (cachedOriginal) {
         if (cachedOriginal[IOPA.Events]) {
-     //    context.log.info("[IOPA_CACHE_MATCH] MATCHED " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.Seq] +"=" + cachedOriginal[IOPA.Seq]);
+      //  context.log.info("[IOPA_CACHE_MATCH] MATCHED " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.Seq] +"=" + cachedOriginal[IOPA.Seq]);
            
             // TRANSFER ONTO EVENTS PIPELINE
            context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.MATCHED] = context[IOPA.Seq];
@@ -272,7 +271,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
             // silently ignore  TODO: Transfer to a different pipeline
         }
     } else {
-   //     context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
+    //   context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
         // silently ignore    TODO: Transfer to a different pipeline
     }
 };

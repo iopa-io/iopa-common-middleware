@@ -151,7 +151,7 @@ function _invokeOnParentResponse(parentContext, response) {
  * @private
 */
 function _writeResponse(context, nextStream, chunk, encoding, callback) {
-       context[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, context));
+       context[IOPA.Events].once(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, context));
        nextStream.write(chunk, encoding, callback);
        this.responseout(context);
 };
