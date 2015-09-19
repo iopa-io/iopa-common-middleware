@@ -1,3 +1,4 @@
+/* global = */
 /*
  * Copyright (c) 2015 Internet of Protocols Alliance (IOPA)
  *
@@ -40,6 +41,18 @@ function ClientSend(app) {
      app.properties[SERVER.Capabilities][CLIENTSEND.CAPABILITY] = {};
      app.properties[SERVER.Capabilities][CLIENTSEND.CAPABILITY][SERVER.Version] = packageVersion;
 }
+
+/**
+ * Handle inbound server requests (to add features for outbound request-responses)
+ * @method invoke
+ * @param context IOPA context dictionary
+ * @param next   IOPA application delegate for the remainder of the pipeline
+ */
+ClientSend.prototype.channel = function ClientSend_channel(channelContext, next) {
+    channelContext.send = this._send.bind(this, channelContext);
+    channelContext.observe = this._observe.bind(this, channelContext);
+    return next();
+};
 
 /**
  * Handle inbound server requests (to add features for outbound request-responses)
