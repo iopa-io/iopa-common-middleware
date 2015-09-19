@@ -24,7 +24,7 @@ const BACKFORTH = {CAPABILITY: "urn:io.iopa:backforth",
         CURRENTCHILD: "backForth.CurrentChild"
           }
  
- const packageVersion = require('../package.json').version;
+ const packageVersion = require('../../package.json').version;
   
 /**
  * IOPA Middleware 

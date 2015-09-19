@@ -26,7 +26,7 @@
      OBSERVE: "clientSend.Observe"
      }
  
- const packageVersion = require('../package.json').version;
+ const packageVersion = require('../../package.json').version;
         
 /**
  * IOPA Middleware 

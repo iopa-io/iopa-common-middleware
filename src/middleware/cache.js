@@ -16,6 +16,8 @@
 
 var LRU = require('lru-cache');
 var iopaStream = require('iopa-common-stream');
+var iopaGeneric = require('../common/iopageneric.js')
+var util = require('util');
 
 const constants = require('iopa').constants,
     IOPA = constants.IOPA,
@@ -27,7 +29,7 @@ const CACHE = {CAPABILITY: "urn:io.iopa:cache",
      MATCHED: "cache.Matched"
       }
  
- const packageVersion = require('../package.json').version;
+ const packageVersion = require('../../package.json').version;
 
 
 // GLOBALS
@@ -79,6 +81,8 @@ function cacheKeyToken(context) {
       return result;
 }
 
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 /**
  * IOPA Middleware for Cache of Outgoing Messages on Servers/Clients
  *
@@ -87,32 +91,52 @@ function cacheKeyToken(context) {
  * @public
  */
 function Cache(app) {
+   _classCallCheck(this, Cache);
+   iopaGeneric.call(this);
+        
       if (!app.properties[SERVER.Capabilities][CACHE.CAPABILITY])
         throw ("Missing Dependency:  cache Server/Middleware in Pipeline");
 
     this._db = app.properties[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.DB]();
 }
 
-/**
- * Handle inbound server requests (to add features for outbound request-responses)
- * @method invoke
- * @param context IOPA context dictionary
- * @param next   IOPA application delegate for the remainder of the pipeline
- */
-Cache.prototype.invoke = function Cache_invoke(context, next) {
-    context.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(this._write.bind(this, context.response, context.response["server.RawStream"])); 
-    return next();
-};
+util.inherits(Cache, iopaGeneric);
 
 /**
- * @method dispatch
- * @param next   IOPA application delegate for the remainder of the pipeline
+ * SERVER REQUEST IN
+ *
+ * @method requestin
  * @param context IOPA context dictionary
+ * @returns void
+ * @protected OVERRIDES
  */
-Cache.prototype.dispatch = function Cache_dispatch(context, next){ 
-    context[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(this._write.bind(this, context, context["server.RawStream"])); 
-    return next();
-};
+Cache.prototype.requestin = function(context){
+    
+}
+
+/**
+ * SERVER REQUEST OUT
+ *
+ * @method requestin
+ * @param context IOPA context dictionary
+ * @returns void
+ * @protected OVERRIDES
+ */
+Cache.prototype.requestout = function(context){
+    this._cache(context);
+}
+
+/**
+ * RESPONSE OUT (either for SERVER REQUEST OR FOR CLIENT REQUEST RESPONSE)
+ *
+ * @method responseout
+ * @param context IOPA context dictionary
+ * @returns void
+ * @protected OVERRIDES
+ */
+Cache.prototype.responseout = function(context){
+    this._cache(context);
+}
 
 /**
  * @method _write
@@ -123,7 +147,7 @@ Cache.prototype.dispatch = function Cache_dispatch(context, next){
  * @param callback Function Callback for when this chunk of data is flushed
  * @private
 */
-Cache.prototype._write = function Cache_write(context, nextStream, chunk, encoding, callback) {
+Cache.prototype._cache = function Cache_cache(context) {
    
      if (!context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.DONOTCACHE]) 
      {
@@ -136,7 +160,6 @@ Cache.prototype._write = function Cache_write(context, nextStream, chunk, encodi
             cacheData[IOPA.MessageId] = context[IOPA.MessageId];
               
             var key = cacheKeyId(context);
-            
             this._db.set(key, cacheData);
             
             if (context[IOPA.Token])
@@ -144,10 +167,9 @@ Cache.prototype._write = function Cache_write(context, nextStream, chunk, encodi
                key = cacheKeyToken(context);
                this._db.set(key, cacheData);
             } 
+            
+            context[IOPA.Events].on(IOPA.EVENTS.Finish, this._closeContext.bind(this, context));
      } ;
-   
-     context[IOPA.Events].on(IOPA.EVENTS.Finish, this._closeContext.bind(this, context));
-     nextStream.write(chunk, encoding, callback);
 };
 
 /**
@@ -210,6 +232,7 @@ CacheMatch.prototype.connect = function CacheMatch_connect(channelContext, next)
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client_invokeOnParentResponse(channelContext, context) {
+   
     if (context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.MATCHED])
     {   
           return;
@@ -238,7 +261,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
 
     if (cachedOriginal) {
         if (cachedOriginal[IOPA.Events]) {
-        //  context.log.info("[IOPA_CACHE_MATCH] MATCHED " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.Seq] +"=" + cachedOriginal[IOPA.Seq]);
+     //    context.log.info("[IOPA_CACHE_MATCH] MATCHED " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.Seq] +"=" + cachedOriginal[IOPA.Seq]);
            
             // TRANSFER ONTO EVENTS PIPELINE
            context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.MATCHED] = context[IOPA.Seq];
@@ -249,7 +272,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
             // silently ignore  TODO: Transfer to a different pipeline
         }
     } else {
-      //   context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
+   //     context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
         // silently ignore    TODO: Transfer to a different pipeline
     }
 };

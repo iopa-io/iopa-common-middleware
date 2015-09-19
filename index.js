@@ -14,6 +14,6 @@
  * limitations under the License.
  */
  
-exports.BackForth = require ( './src/BackForth.js' ) ;
-exports.Cache = require ( './src/Cache.js' ) ;
-exports.ClientSend = require ( './src/ClientSend.js' ) ;
+exports.BackForth = require ( './src/middleware/backforth.js' ) ;
+exports.Cache = require ( './src/middleware/cache.js' ) ;
+exports.ClientSend = require ( './src/middleware/clientsend.js' ) ;
