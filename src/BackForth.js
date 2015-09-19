@@ -20,7 +20,7 @@ const constants = require('iopa').constants,
     SERVER = constants.SERVER
     
         
-const BACKFORTH = {CAPABILITY: "urn:io.iopa:BackForth",
+const BACKFORTH = {CAPABILITY: "urn:io.iopa:backforth",
         CURRENTCHILD: "backForth.CurrentChild"
           }
  
@@ -44,27 +44,25 @@ function BackForth(app) {
  * @this context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-BackForth.prototype.invoke = function BackForth_invoke(context, next) {
-    context[SERVER.Fetch] = this._client_fetch.bind(this, context, context[SERVER.Fetch]);
-    context[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, context));
+BackForth.prototype.channel = function BackForth_invoke(context, next) {
+     context[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, context));
     return next();
 };
 
 /**
- * Context Func(tion) to create a new IOPA Request using a Tcp Url including host and port name
- *
- * @method _client_fetch
-
- * @parm {string} path url representation of ://127.0.0.1/hello
- * @parm {string} [method]  request method (e.g. 'GET')
- * @returns {Promise(context)}
- * @public
+ * @method connect
+ * @this context IOPA context dictionary
+ * @param next   IOPA application delegate for the remainder of the pipeline
  */
-BackForth.prototype._client_fetch = function BackForth_client_fetch(parentContext, nextFactory, path, options, pipeline){
-    return nextFactory(path, options, function(childContext){
-         parentContext[SERVER.Capabilities][BACKFORTH.CAPABILITY][BACKFORTH.CURRENTCHILD] = childContext;
-         return pipeline(childContext);
-    });
+BackForth.prototype.connect = function BackForth_connect(context, next) {
+     context[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, context));
+    return next();
+};
+
+
+BackForth.prototype.dispatch = function BackForth_dispatch(context, next){
+    context[SERVER.ParentContext][SERVER.Capabilities][BACKFORTH.CAPABILITY][BACKFORTH.CURRENTCHILD] = context;
+    return next();
 };
 
 /**

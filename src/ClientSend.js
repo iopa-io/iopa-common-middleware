@@ -21,7 +21,7 @@
  const iopaStream = require('iopa-common-stream');
  
  const CLIENTSEND = {
-     CAPABILITY: "urn:io.iopa:ClientSend",
+     CAPABILITY: "urn:io.iopa:clientSend",
      DONE: "clientSend.Done",
      OBSERVE: "clientSend.Observe"
      }
@@ -42,34 +42,38 @@ function ClientSend(app) {
 }
 
 /**
+ * Handle inbound server requests (to add features for outbound request-responses)
  * @method invoke
  * @param context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-ClientSend.prototype.invoke = function ClientSend_invoke(channelContext, next) {
-    channelContext[SERVER.Fetch] = this._fetch.bind(this, channelContext, channelContext[SERVER.Fetch]);
+ClientSend.prototype.invoke = function ClientSend_invoke(context, next) {
+    context.send = this._send.bind(this, context);
+    context.observe = this._observe.bind(this, context);
+    return next();
+};
+
+/**
+ * Handle outbound client connections
+ * @method connect 
+ * @param context IOPA channelContext dictionary
+ * @param next   IOPA application delegate for the remainder of the pipeline
+ */
+ClientSend.prototype.connect = function ClientSend_connect(channelContext, next) {
     channelContext.send = this._send.bind(this, channelContext);
     channelContext.observe = this._observe.bind(this, channelContext);
     return next();
 };
 
 /**
- * Context Func(tion) to create a new IOPA Request using a Tcp Url including host and port name
- *
- * @method fetch
-
- * @parm  path url representation of ://127.0.0.1/hello
- * @param options object dictionary to override defaults
- * @param pipeline function(context):Promise  to call with context record
- * @returns {Promise(context)}
- * @public
+ * @method dispatch
+ * @param parentContext IOPA context dictionary
+ * @param next   IOPA application delegate for the remainder of the pipeline
+ * @param context IOPA context dictionary
  */
-ClientSend.prototype._fetch = function ClientSend_fetch(channelContext, nextFetch, path, options, pipeline) {
-    var that = this;
-    return nextFetch(path, options, function (childContext) {
-        childContext[IOPA.Events].on(IOPA.EVENTS.Response, that.client_invokeOnResponse.bind(this, childContext));
-        return pipeline(childContext);
-    });
+ClientSend.prototype.dispatch = function ClientSend_dispatch(context, next){ 
+    context[IOPA.Events].on(IOPA.EVENTS.Response, this.client_invokeOnResponse.bind(this, context));
+    return next();
 };
 
 /**

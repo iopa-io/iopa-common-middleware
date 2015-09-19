@@ -17,8 +17,8 @@
 const iopaMiddleware = require('../index.js'),
   stubServer = require('iopa-test').stubServer,
   BackForth = require('../index.js').BackForth,
-    Cache = require('../index.js').Cache,
-    ClientSend = require('../index.js').ClientSend
+   Cache = require('../index.js').Cache,
+  ClientSend = require('../index.js').ClientSend
 
   
 var should = require('should');
@@ -34,29 +34,19 @@ describe('#BackForth()', function () {
     it('should use BackForth', function (done) {
 
         var app = new iopa.App();
-
         app.use(ClientSend);
-
+        app.use(BackForth);
+    
         app.use(function (context, next) {
             context.response["server.RawStream"].end("HELLO WORLD " + seq++);
             return next();
         });
 
         var server = stubServer.createServer(app.build())
-        var c = new ClientSend(app);
-        var b = new BackForth(app);
-        server.connectuse(c.invoke.bind(c));
-        server.connectuse(b.invoke.bind(b));
-
+      
         server.connect("urn://localhost").then(function (client) {
-
-
-
-            return client.send("/projector", "GET");
-        }).then(function () {
-            process.nextTick(function () {
-                done();
-            });
+           return client.send("/projector", "GET");
+        }).then(function () { done();
         })
 
 
@@ -99,16 +89,14 @@ describe('#Cache()', function () {
 
         app.use(Cache.Match);
         app.use(Cache.Cache);
-        var c = new Cache.Cache(app)
-
+    
         app.use(function (context, next) {
             context.response["server.RawStream"].end("HELLO WORLD " + seq++);
             return next();
         });
 
         var server = stubServer.createServer(app.build())
-        server.connectuse(c.invoke.bind(c));
-
+   
         server.connect("urn://localhost").then(function (client) {
             return client.fetch("/projector", "GET", function (context) {
                 context["server.RawStream"].end("HELLO WORLD " + seq++);
@@ -135,6 +123,7 @@ describe('#ClientSend()', function () {
         var app = new iopa.App();
 
         app.use(ClientSend);
+        app.use(BackForth);
 
         app.use(function (context, next) {
             context.response["server.RawStream"].end("HELLO WORLD " + seq++);
@@ -142,14 +131,8 @@ describe('#ClientSend()', function () {
         });
 
         var server = stubServer.createServer(app.build())
-        var c = new ClientSend(app);
-        var b = new BackForth(app);
-        server.connectuse(c.invoke.bind(c));
-        server.connectuse(b.invoke.bind(b));
-
+   
         server.connect("urn://localhost").then(function (client) {
-
-
 
             return client.send("/projector", "GET");
         }).then(function () {

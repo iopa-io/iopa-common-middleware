@@ -21,7 +21,7 @@ const constants = require('iopa').constants,
     IOPA = constants.IOPA,
     SERVER = constants.SERVER
     
-const CACHE = {CAPABILITY: "urn:io.iopa:Cache",
+const CACHE = {CAPABILITY: "urn:io.iopa:cache",
      DB: "cache.Db",
      DONOTCACHE: "cache.DoNotCache",
      MATCHED: "cache.Matched"
@@ -94,23 +94,24 @@ function Cache(app) {
 }
 
 /**
+ * Handle inbound server requests (to add features for outbound request-responses)
  * @method invoke
  * @param context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 Cache.prototype.invoke = function Cache_invoke(context, next) {
-    
-  if (context[SERVER.IsLocalOrigin])
-  {
-     // client
-      context[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(this._write.bind(this, context, context["server.RawStream"])); 
-     } 
-  else
-    // server
-     context.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(this._write.bind(this, context.response, context.response["server.RawStream"])); 
-      
-  return next();
-    
+    context.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(this._write.bind(this, context.response, context.response["server.RawStream"])); 
+    return next();
+};
+
+/**
+ * @method dispatch
+ * @param next   IOPA application delegate for the remainder of the pipeline
+ * @param context IOPA context dictionary
+ */
+Cache.prototype.dispatch = function Cache_dispatch(context, next){ 
+    context[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(this._write.bind(this, context, context["server.RawStream"])); 
+    return next();
 };
 
 /**
@@ -178,14 +179,27 @@ function CacheMatch(app) {
 }
 
 /**
+ * Handle inbound server connections
  * @method invoke
- * @this channelContext IOPA context dictionary
+ * @param context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-CacheMatch.prototype.invoke = function CacheMatch_invoke(channelContext, next) {
-    channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, channelContext));
-    return next();
+CacheMatch.prototype.channel = function CacheMatch_channel(channelContext, next) {
+   channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, channelContext));  
+   return next();
 };
+
+/**
+ * Handle outbound client connections
+ * @method connect 
+ * @param context IOPA channelContext dictionary
+ * @param next   IOPA application delegate for the remainder of the pipeline
+ */
+CacheMatch.prototype.connect = function CacheMatch_connect(channelContext, next) {
+     channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, channelContext));
+     return next();
+};
+
  var seq = 0;
    
 /**
