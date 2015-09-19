@@ -17,3 +17,4 @@
 exports.BackForth = require ( './src/middleware/backforth.js' ) ;
 exports.Cache = require ( './src/middleware/cache.js' ) ;
 exports.ClientSend = require ( './src/middleware/clientsend.js' ) ;
+exports.Generic = require ( './src/common/iopageneric.js' ) ;
