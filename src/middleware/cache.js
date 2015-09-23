@@ -167,7 +167,7 @@ Cache.prototype._cache = function Cache_cache(context) {
                this._db.set(key, cacheData);
             } 
             
-            context[IOPA.CancelToken].oncancelled.then(this._closeContext.bind(this, context));
+            context[IOPA.CancelToken].onCancelled.then(this._closeContext.bind(this, context));
      
      } ;
 };
