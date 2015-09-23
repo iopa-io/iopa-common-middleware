@@ -39,9 +39,10 @@
     "typings": "tsd reinstall --overwrite --clean --config tools/tsd.json && tsd link"
   },
   "devDependencies": {
+    "bluebird": "^2.10.1",
+    "iopa-test": "^1.2.0",
     "mocha": "^2.3.2",
     "mocha-junit-reporter": "^1.6.1",
-    "should": "^7.1.0",
-    "iopa-test": "^1.2.0"
+    "should": "^7.1.0"
   }
 }

@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-  
+ 
+ global.Promise = require('bluebird');
+ 
 const iopaMiddleware = require('../index.js'),
   stubServer = require('iopa-test').stubServer,
   BackForth = require('../index.js').BackForth,
@@ -98,7 +100,7 @@ describe('#Cache()', function () {
         var server = stubServer.createServer(app.build())
    
         server.connect("urn://localhost").then(function (client) {
-            return client.fetch("/projector", "GET", function (context) {
+            return client["server.Fetch"]("/projector", "GET", function (context) {
                 context["server.RawStream"].end("HELLO WORLD " + seq++);
             });
         }).then(function () {
