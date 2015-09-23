@@ -122,8 +122,8 @@ ClientSend.prototype._observe = function ClientSend_observe(channelContext, path
     return channelContext[SERVER.Fetch](path, options, function(childContext){
           return new Promise(function(resolve, reject){
                 childContext[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.OBSERVE] = callback;
-                channelContext[IOPA.CancelToken].onCancelled.then(resolve);
-                childContext[IOPA.CancelToken].onCancelled.then(resolve);    
+                channelContext[IOPA.CancelToken].onCancelled(resolve);
+                childContext[IOPA.CancelToken].onCancelled(resolve);    
              }); 
     });
 };
