@@ -75,6 +75,7 @@ ClientSend.prototype.invoke = function ClientSend_invoke(context, next) {
 ClientSend.prototype.connect = function ClientSend_connect(channelContext, next) {
     channelContext.send = this._send.bind(this, channelContext);
     channelContext.observe = this._observe.bind(this, channelContext);
+  
     return next();
 };
 
@@ -121,9 +122,9 @@ ClientSend.prototype._observe = function ClientSend_observe(channelContext, path
     return channelContext[SERVER.Fetch](path, options, function(childContext){
           return new Promise(function(resolve, reject){
                 childContext[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.OBSERVE] = callback;
-                channelContext[IOPA.Events].on(IOPA.EVENTS.Disconnect, resolve);
-                channelContext[IOPA.Events].on(IOPA.EVENTS.Finish, resolve);     
-            }); 
+                channelContext[IOPA.CancelToken].oncancelled.then(resolve);
+                childContext[IOPA.CancelToken].oncancelled.then(resolve);    
+             }); 
     });
 };
 

@@ -153,7 +153,7 @@ Cache.prototype._cache = function Cache_cache(context) {
      {
          var cacheData = {};
             cacheData[SERVER.IsLocalOrigin] = context[SERVER.IsLocalOrigin];
-            cacheData[SERVER.CallCancelledSource] = context[SERVER.CallCancelledSource];
+            cacheData[IOPA.CancelToken] = context[IOPA.CancelToken];
             cacheData[IOPA.Events] = context[IOPA.Events];
             cacheData[SERVER.RawStream] = context[SERVER.RawStream];
             cacheData[IOPA.Seq] = context[IOPA.Seq];
@@ -167,7 +167,8 @@ Cache.prototype._cache = function Cache_cache(context) {
                this._db.set(key, cacheData);
             } 
             
-            context[IOPA.Events].on(IOPA.EVENTS.Finish, this._closeContext.bind(this, context));
+            context[IOPA.CancelToken].oncancelled.then(this._closeContext.bind(this, context));
+     
      } ;
 };
 
