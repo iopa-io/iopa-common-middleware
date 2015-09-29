@@ -59,29 +59,20 @@ var _db = LRU({
     }
 });
 
-function cacheKeyId(context, reverse) {
-
+function cacheKeyId(context) {
     var result = "cache://";
     result += context[SERVER.RemoteAddress];
     result += ":" + context[SERVER.RemotePort];
-    if (reverse)
-        result += "/" + ((context[SERVER.IsRequest]) ? ':response' : ':request');
-    else
-        result += "/" + ((context[SERVER.IsRequest]) ? ':request' : ':response');
     result += "/&id=" + context[IOPA.MessageId];
-  //  console.log(reverse + result);
+  // console.log(result);
     return result;
 }
 
-function cacheKeyToken(context, reverse) {
+function cacheKeyToken(context) {
 
     var result = "cache://";
     result += context[SERVER.RemoteAddress];
     result += ":" + context[SERVER.RemotePort];
-    if (reverse)
-        result += "/" + ((context[SERVER.IsRequest]) ? ':res' : ':req');
-    else
-        result += "/" + ((context[SERVER.IsRequest]) ? ':req' : ':res');
     result += "/&token=" + context[IOPA.Token];
 
     return result;
@@ -164,10 +155,10 @@ Cache.prototype._cache = function Cache_cache(context) {
         cacheData[IOPA.Seq] = context[IOPA.Seq];
         cacheData[IOPA.MessageId] = context[IOPA.MessageId];
 
-        var key = cacheKeyId(context, false);
+        var key = cacheKeyId(context);
         this._db.set(key, cacheData);
         if (context[IOPA.Token]) {
-            key = cacheKeyToken(context, false);
+            key = cacheKeyToken(context);
             this._db.set(key, cacheData);
         }
 
@@ -243,7 +234,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
         }
 
     //CHECK CACHE
-    var key = cacheKeyId(context, true);
+    var key = cacheKeyId(context);
    
     var cachedOriginal = _db.peek(key);
     
@@ -252,7 +243,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
         if (!cachedOriginal) {  
             if (context[IOPA.Token])
             {
-            key = cacheKeyToken(context, true);
+            key = cacheKeyToken(context);
             cachedOriginal = _db.peek(key);
             }
         } else {
@@ -276,7 +267,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
             // silently ignore  TODO: Transfer to a different pipeline
         }
     } else {
-     // context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
+     // context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + key + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
         // silently ignore    TODO: Transfer to a different pipeline
     }
 };
