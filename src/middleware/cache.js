@@ -59,26 +59,32 @@ var _db = LRU({
     }
 });
 
-function cacheKeyId(context) {
-  
+function cacheKeyId(context, reverse) {
+
     var result = "cache://";
-       result += context[SERVER.RemoteAddress];  
-       result += ":"+ context[SERVER.RemotePort];
-                //  result += "/" + (context[SERVER.IsRequest]) ? 'request' : 'response' ;
-      result += "/&id=" + context[IOPA.MessageId] ;
-     
-      return result;
+    result += context[SERVER.RemoteAddress];
+    result += ":" + context[SERVER.RemotePort];
+    if (reverse)
+        result += "/" + ((context[SERVER.IsRequest]) ? ':response' : ':request');
+    else
+        result += "/" + ((context[SERVER.IsRequest]) ? ':request' : ':response');
+    result += "/&id=" + context[IOPA.MessageId];
+  //  console.log(reverse + result);
+    return result;
 }
 
-function cacheKeyToken(context) {
-  
+function cacheKeyToken(context, reverse) {
+
     var result = "cache://";
-       result += context[SERVER.RemoteAddress];  
-       result += ":"+ context[SERVER.RemotePort];
-                 //  result += "/" + (context["server.IsRequest"]) ? 'request' : 'response' ;
-      result += "/&token=" + context[IOPA.Token] ;
-    
-      return result;
+    result += context[SERVER.RemoteAddress];
+    result += ":" + context[SERVER.RemotePort];
+    if (reverse)
+        result += "/" + ((context[SERVER.IsRequest]) ? ':res' : ':req');
+    else
+        result += "/" + ((context[SERVER.IsRequest]) ? ':req' : ':res');
+    result += "/&token=" + context[IOPA.Token];
+
+    return result;
 }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -91,10 +97,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
  * @public
  */
 function Cache(app) {
-   _classCallCheck(this, Cache);
-   iopaGeneric.call(this);
-        
-      if (!app.properties[SERVER.Capabilities][CACHE.CAPABILITY])
+    _classCallCheck(this, Cache);
+    iopaGeneric.call(this);
+
+    if (!app.properties[SERVER.Capabilities][CACHE.CAPABILITY])
         throw ("Missing Dependency:  cache Server/Middleware in Pipeline");
 
     this._db = app.properties[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.DB]();
@@ -110,8 +116,8 @@ util.inherits(Cache, iopaGeneric);
  * @returns void
  * @protected OVERRIDES
  */
-Cache.prototype.requestin = function(context){
-    
+Cache.prototype.requestin = function (context) {
+
 }
 
 /**
@@ -122,7 +128,7 @@ Cache.prototype.requestin = function(context){
  * @returns void
  * @protected OVERRIDES
  */
-Cache.prototype.requestout = function(context){
+Cache.prototype.requestout = function (context) {
     this._cache(context);
 }
 
@@ -134,7 +140,7 @@ Cache.prototype.requestout = function(context){
  * @returns void
  * @protected OVERRIDES
  */
-Cache.prototype.responseout = function(context){
+Cache.prototype.responseout = function (context) {
     this._cache(context);
 }
 
@@ -148,28 +154,26 @@ Cache.prototype.responseout = function(context){
  * @private
 */
 Cache.prototype._cache = function Cache_cache(context) {
-   
-     if (!context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.DONOTCACHE]) 
-     {
-         var cacheData = {};
-            cacheData[SERVER.IsLocalOrigin] = context[SERVER.IsLocalOrigin];
-            cacheData[IOPA.CancelToken] = context[IOPA.CancelToken];
-            cacheData[IOPA.Events] = context[IOPA.Events];
-            cacheData[SERVER.RawStream] = context[SERVER.RawStream];
-            cacheData[IOPA.Seq] = context[IOPA.Seq];
-            cacheData[IOPA.MessageId] = context[IOPA.MessageId];
-              
-            var key = cacheKeyId(context);
+
+    if (!context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.DONOTCACHE]) {
+        var cacheData = {};
+        cacheData[SERVER.IsLocalOrigin] = context[SERVER.IsLocalOrigin];
+        cacheData[IOPA.CancelToken] = context[IOPA.CancelToken];
+        cacheData[IOPA.Events] = context[IOPA.Events];
+        cacheData[SERVER.RawStream] = context[SERVER.RawStream];
+        cacheData[IOPA.Seq] = context[IOPA.Seq];
+        cacheData[IOPA.MessageId] = context[IOPA.MessageId];
+
+        var key = cacheKeyId(context, false);
+        this._db.set(key, cacheData);
+        if (context[IOPA.Token]) {
+            key = cacheKeyToken(context, false);
             this._db.set(key, cacheData);
-            if (context[IOPA.Token])
-            {
-               key = cacheKeyToken(context);
-               this._db.set(key, cacheData);
-            } 
-            
-            context[IOPA.CancelToken].onCancelled(this._closeContext.bind(this, context));
-     
-     } ;
+        }
+
+        context[IOPA.CancelToken].onCancelled(this._closeContext.bind(this, context));
+
+    };
 };
 
 /**
@@ -178,7 +182,7 @@ Cache.prototype._cache = function Cache_cache(context) {
  * @private
 */
 Cache.prototype._closeContext = function Cache_close(context, key) {
-       this._db.del(key);
+    this._db.del(key);
 };
 
 module.exports.Cache = Cache;
@@ -239,7 +243,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
         }
 
     //CHECK CACHE
-    var key = cacheKeyId(context);
+    var key = cacheKeyId(context, true);
    
     var cachedOriginal = _db.peek(key);
     
@@ -248,7 +252,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
         if (!cachedOriginal) {  
             if (context[IOPA.Token])
             {
-            key = cacheKeyToken(context);
+            key = cacheKeyToken(context, true);
             cachedOriginal = _db.peek(key);
             }
         } else {
@@ -261,7 +265,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
 
     if (cachedOriginal) {
         if (cachedOriginal[IOPA.Events]) {
-     //   context.log.info("[IOPA_CACHE_MATCH] MATCHED " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.Seq] +"=" + cachedOriginal[IOPA.Seq]);
+      //  context.log.info("[IOPA_CACHE_MATCH] MATCHED " + key + "    " + context[IOPA.Method] +" "+ context[IOPA.Seq] +"=" + cachedOriginal[IOPA.Seq]);
            
             // TRANSFER ONTO EVENTS PIPELINE
            context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.MATCHED] = context[IOPA.Seq];
@@ -272,7 +276,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
             // silently ignore  TODO: Transfer to a different pipeline
         }
     } else {
-    //  context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
+     // context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + cacheKeyId(context) + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
         // silently ignore    TODO: Transfer to a different pipeline
     }
 };
