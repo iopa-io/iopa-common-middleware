@@ -26,7 +26,8 @@ const constants = require('iopa').constants,
 const CACHE = {CAPABILITY: "urn:io.iopa:cache",
      DB: "cache.Db",
      DONOTCACHE: "cache.DoNotCache",
-     MATCHED: "cache.Matched"
+     MATCHED: "cache.Matched",
+     MATCHANYHOST: "cache.MatchAnyHost"
       }
  
  const packageVersion = require('../../package.json').version;
@@ -59,21 +60,21 @@ var _db = LRU({
     }
 });
 
-function cacheKeyId(context) {
+function cacheKeyId(context, matchanyhost) {
     var result = "cache://";
-    result += context[SERVER.RemoteAddress];
-    result += ":" + context[SERVER.RemotePort];
+    if (!matchanyhost)
+         result += context[SERVER.RemoteAddress] + ":" + context[SERVER.RemotePort];
     result += "/&id=" + context[IOPA.MessageId];
   // console.log(result);
     return result;
 }
 
-function cacheKeyToken(context) {
+function cacheKeyToken(context, matchanyhost) {
 
     var result = "cache://";
-    result += context[SERVER.RemoteAddress];
-    result += ":" + context[SERVER.RemotePort];
-    result += "/&token=" + context[IOPA.Token];
+     if (!matchanyhost)
+         result += context[SERVER.RemoteAddress] + ":" + context[SERVER.RemotePort];
+     result += "/&token=" + context[IOPA.Token];
 
     return result;
 }
@@ -155,10 +156,10 @@ Cache.prototype._cache = function Cache_cache(context) {
         cacheData[IOPA.Seq] = context[IOPA.Seq];
         cacheData[IOPA.MessageId] = context[IOPA.MessageId];
 
-        var key = cacheKeyId(context);
+        var key = cacheKeyId(context, context[CACHE.MATCHANYHOST]);
         this._db.set(key, cacheData);
         if (context[IOPA.Token]) {
-            key = cacheKeyToken(context);
+            key = cacheKeyToken(context, context[CACHE.MATCHANYHOST]);
             this._db.set(key, cacheData);
         }
 
@@ -237,6 +238,11 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
     var key = cacheKeyId(context);
    
     var cachedOriginal = _db.peek(key);
+    if (!cachedOriginal)
+    {
+        key = cacheKeyId(context, true);
+        cachedOriginal = _db.peek(key);
+    }
     
     if (context[IOPA.Token])
     {
@@ -245,6 +251,11 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
             {
             key = cacheKeyToken(context);
             cachedOriginal = _db.peek(key);
+            if (!cachedOriginal)
+            {
+                key = cacheKeyToken(context, true);
+                cachedOriginal = _db.peek(key);
+            }           
             }
         } else {
             if (context[IOPA.Token] && cachedOriginal[IOPA.Token] &&

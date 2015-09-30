@@ -92,7 +92,7 @@ GenericMiddleware.prototype.responseout = function(context){
  * @param context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-GenericMiddleware.prototype.channel = function MessageLogger_channel(channelContext, next) {
+GenericMiddleware.prototype.channel = function GenericMiddleware_channel(channelContext, next) {
      channelContext[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, channelContext));  
      return next();
 };
@@ -102,7 +102,7 @@ GenericMiddleware.prototype.channel = function MessageLogger_channel(channelCont
  * @param context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-GenericMiddleware.prototype.invoke = function MessageLogger_invoke(context, next) {
+GenericMiddleware.prototype.invoke = function GenericMiddleware_invoke(context, next) {
         context.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeResponse.bind(this, context.response, context.response[SERVER.RawStream]));
         this.requestin(context);
         return next();
@@ -114,7 +114,7 @@ GenericMiddleware.prototype.invoke = function MessageLogger_invoke(context, next
  * @param context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-GenericMiddleware.prototype.connect = function MessageLogger_connect(context, next) {
+GenericMiddleware.prototype.connect = function GenericMiddleware_connect(context, next) {
      context[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, context));
      return next();
 };
@@ -124,7 +124,7 @@ GenericMiddleware.prototype.connect = function MessageLogger_connect(context, ne
  * @method connect
  * @this context IOPA context dictionary
  */
-GenericMiddleware.prototype.dispatch = function MessageLogger_dispatch(context, next) {
+GenericMiddleware.prototype.dispatch = function GenericMiddleware_dispatch(context, next) {
        context[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeRequest.bind(this, context, context[SERVER.RawStream]));
       return next();
 }
