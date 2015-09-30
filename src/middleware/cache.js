@@ -156,10 +156,10 @@ Cache.prototype._cache = function Cache_cache(context) {
         cacheData[IOPA.Seq] = context[IOPA.Seq];
         cacheData[IOPA.MessageId] = context[IOPA.MessageId];
 
-        var key = cacheKeyId(context, context[CACHE.MATCHANYHOST]);
+        var key = cacheKeyId(context, context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.MATCHANYHOST]);
         this._db.set(key, cacheData);
         if (context[IOPA.Token]) {
-            key = cacheKeyToken(context, context[CACHE.MATCHANYHOST]);
+            key = cacheKeyToken(context, context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.MATCHANYHOST]);
             this._db.set(key, cacheData);
         }
 
