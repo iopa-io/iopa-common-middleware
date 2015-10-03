@@ -101,11 +101,12 @@ ClientSend.prototype._send = function ClientSend_send(channelContext, path, opti
    
     options = options || {};
     options[IOPA.Body] = new iopaStream.OutgoingStream(buf);
-    return channelContext[SERVER.Fetch](path, options, function(childContext){
-         return new Promise(function(resolve, reject){
+              
+    return channelContext[SERVER.Fetch](path, options, null , function(childContext){  
+        return new Promise(function(resolve, reject){
                 childContext[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.DONE] = resolve;
-            }); 
-    });
+            });
+    }); 
 };
 
 /**
