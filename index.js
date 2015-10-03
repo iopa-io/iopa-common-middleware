@@ -14,7 +14,7 @@
  * limitations under the License.
  */
  
-exports.BackForth = require ( './src/middleware/backforth.js' ) ;
+exports.Pipeline = require ( './src/middleware/pipeline.js' ) ;
 exports.Cache = require ( './src/middleware/cache.js' ) ;
 exports.ClientSend = require ( './src/middleware/clientsend.js' ) ;
 exports.Generic = require ( './src/common/iopageneric.js' ) ;

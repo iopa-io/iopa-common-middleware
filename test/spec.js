@@ -18,7 +18,7 @@
  
 const iopaMiddleware = require('../index.js'),
   stubServer = require('iopa-test').stubServer,
-  BackForth = require('../index.js').BackForth,
+  Pipeline = require('../index.js').Pipeline,
    Cache = require('../index.js').Cache,
   ClientSend = require('../index.js').ClientSend
 
@@ -26,18 +26,18 @@ const iopaMiddleware = require('../index.js'),
 var should = require('should');
 const iopa = require('iopa');
 
-describe('#BackForth()', function () {
-    it('should have BackForth', function () {
-        iopaMiddleware.should.have.property("BackForth");
+describe('#Pipeline()', function () {
+    it('should have Pipeline', function () {
+        iopaMiddleware.should.have.property("Pipeline");
     });
 
     var seq = 0;
 
-    it('should use BackForth', function (done) {
+    it('should use Pipeline', function (done) {
 
         var app = new iopa.App();
         app.use(ClientSend);
-        app.use(BackForth);
+        app.use(Pipeline);
     
         app.use(function (context, next) {
             context.response["server.RawStream"].end("HELLO WORLD " + seq++);
@@ -125,7 +125,7 @@ describe('#ClientSend()', function () {
         var app = new iopa.App();
 
         app.use(ClientSend);
-        app.use(BackForth);
+        app.use(Pipeline);
 
         app.use(function (context, next) {
             context.response["server.RawStream"].end("HELLO WORLD " + seq++);

@@ -20,8 +20,8 @@ const constants = require('iopa').constants,
     SERVER = constants.SERVER
     
         
-const BACKFORTH = {CAPABILITY: "urn:io.iopa:backforth",
-        CURRENTCHILD: "backForth.CurrentChild"
+const PIPELINE = {CAPABILITY: "urn:io.iopa:pipeline",
+        SENT: "pipeline.Sent"
           }
  
  const packageVersion = require('../../package.json').version;
@@ -34,9 +34,9 @@ const BACKFORTH = {CAPABILITY: "urn:io.iopa:backforth",
  * @constructor
  * @public
  */
-function BackForth(app) {
-     app.properties[SERVER.Capabilities][BACKFORTH.CAPABILITY] = {};
-     app.properties[SERVER.Capabilities][BACKFORTH.CAPABILITY][SERVER.Version] = packageVersion;
+function PipelineMatch(app) {
+     app.properties[SERVER.Capabilities][PIPELINE.CAPABILITY] = {};
+     app.properties[SERVER.Capabilities][PIPELINE.CAPABILITY][SERVER.Version] = packageVersion;
 }
 
 /**
@@ -44,7 +44,7 @@ function BackForth(app) {
  * @this context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-BackForth.prototype.channel = function BackForth_invoke(context, next) {
+PipelineMatch.prototype.channel = function BackForth_invoke(context, next) {
      context[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, context));
     return next();
 };
@@ -54,14 +54,15 @@ BackForth.prototype.channel = function BackForth_invoke(context, next) {
  * @this context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-BackForth.prototype.connect = function BackForth_connect(context, next) {
-     context[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, context));
+PipelineMatch.prototype.connect = function BackForth_connect(channelContext, next) {
+     channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, channelContext));
+     channelContext[SERVER.Capabilities][PIPELINE.CAPABILITY][PIPELINE.SENT] = [];
     return next();
 };
 
 
-BackForth.prototype.dispatch = function BackForth_dispatch(context, next){
-    context[SERVER.ParentContext][SERVER.Capabilities][BACKFORTH.CAPABILITY][BACKFORTH.CURRENTCHILD] = context;
+PipelineMatch.prototype.dispatch = function BackForth_dispatch(context, next){
+    context[SERVER.ParentContext][SERVER.Capabilities][PIPELINE.CAPABILITY][PIPELINE.SENT].push(context);
     return next();
 };
 
@@ -71,12 +72,14 @@ BackForth.prototype.dispatch = function BackForth_dispatch(context, next){
  * @param context IOPA childResponse context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-BackForth.prototype._client_invokeOnParentResponse = function BackForth_client_invokeOnParentResponse(parentContext, context) {
-    if(BACKFORTH.CURRENTCHILD in  parentContext[SERVER.Capabilities][BACKFORTH.CAPABILITY])
+PipelineMatch.prototype._client_invokeOnParentResponse = function BackForth_client_invokeOnParentResponse(parentContext, response) {
+    if ((PIPELINE.SENT in  parentContext[SERVER.Capabilities][PIPELINE.CAPABILITY])
+     && (parentContext[SERVER.Capabilities][PIPELINE.CAPABILITY][PIPELINE.SENT].length > 0))
    {
-        var childRequest = parentContext[SERVER.Capabilities][BACKFORTH.CAPABILITY][BACKFORTH.CURRENTCHILD];
-        childRequest[IOPA.Events].emit(IOPA.EVENTS.Response, context);
+        var childRequest = parentContext[SERVER.Capabilities][PIPELINE.CAPABILITY][PIPELINE.SENT].shift();
+        if (childRequest[IOPA.Events])
+          childRequest[IOPA.Events].emit(IOPA.EVENTS.Response, response);
    }
 };
 
-module.exports = BackForth;
+module.exports = PipelineMatch;
