@@ -102,7 +102,7 @@ ClientSend.prototype._send = function ClientSend_send(channelContext, path, opti
     options = options || {};
     options[IOPA.Body] = new iopaStream.OutgoingMessageStream(buf);
               
-    return channelContext[SERVER.Fetch](path, options, null , function(childContext){  
+    return channelContext[SERVER.Fetch](path, options, null, function(childContext){  
         return new Promise(function(resolve, reject){
                 childContext[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.DONE] = resolve;
             });
@@ -120,7 +120,7 @@ ClientSend.prototype._observe = function ClientSend_observe(channelContext, path
    
     options = options || {};
     options[IOPA.Body] = new iopaStream.OutgoingNoPayloadStream();
-    return channelContext[SERVER.Fetch](path, options, function(childContext){
+    return channelContext[SERVER.Fetch](path, options, null, function(childContext){
           return new Promise(function(resolve, reject){
                 childContext[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.OBSERVE] = callback;
                 channelContext[IOPA.CancelToken].onCancelled(resolve);

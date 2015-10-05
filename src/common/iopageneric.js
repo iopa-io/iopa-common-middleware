@@ -103,7 +103,6 @@ GenericMiddleware.prototype.channel = function GenericMiddleware_channel(channel
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 GenericMiddleware.prototype.invoke = function GenericMiddleware_invoke(context, next) {
-        context.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeResponse.bind(this, context.response, context.response[SERVER.RawStream]));
         this.requestin(context);
         return next();
    
@@ -125,8 +124,12 @@ GenericMiddleware.prototype.connect = function GenericMiddleware_connect(context
  * @this context IOPA context dictionary
  */
 GenericMiddleware.prototype.dispatch = function GenericMiddleware_dispatch(context, next) {
-       context[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeRequest.bind(this, context, context[SERVER.RawStream]));
-      return next();
+    if (context[SERVER.IsRequest])
+       this.requestout(context);
+    else
+       this.responseout(context);
+    
+    return next();
 }
 
 /**
@@ -138,36 +141,6 @@ GenericMiddleware.prototype.dispatch = function GenericMiddleware_dispatch(conte
  */
 function _invokeOnParentResponse(parentContext, response) {
    this.responsein(response);
-   response.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeResponse.bind(this, response.response, response.response[SERVER.RawStream]));
 };
-
-/**
- * @method _write
- * @param context IOPA context dictionary
- * @param nextStream Stream The raw stream saved that is next in chain for writing
- * @param chunk     String | Buffer The data to write
- * @param encoding String The encoding, if chunk is a String
- * @param callback Function Callback for when this chunk of data is flushed
- * @private
-*/
-function _writeResponse(context, nextStream, chunk, encoding, callback) {
-       nextStream.write(chunk, encoding, callback);
-       this.responseout(context);
-};
-
-/**
- * @method _write
- * @param context IOPA context dictionary
- * @param nextStream Stream The raw stream saved that is next in chain for writing
- * @param chunk     String | Buffer The data to write
- * @param encoding String The encoding, if chunk is a String
- * @param callback Function Callback for when this chunk of data is flushed
- * @private
-*/
-function _writeRequest(context, nextStream, chunk, encoding, callback) {
-    nextStream.write(chunk, encoding, callback);
-    this.requestout(context);
-};
-
 
 module.exports = GenericMiddleware;
