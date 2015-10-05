@@ -41,11 +41,12 @@ function PipelineMatch(app) {
 
 /**
  * @method invoke
- * @this context IOPA context dictionary
+ * @this channelContext IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-PipelineMatch.prototype.channel = function BackForth_invoke(context, next) {
-     context[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, context));
+PipelineMatch.prototype.channel = function BackForth_invoke(channelContext, next) {
+     channelContext[SERVER.Capabilities][PIPELINE.CAPABILITY][PIPELINE.SENT] = [];
+     channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, channelContext));
     return next();
 };
 
