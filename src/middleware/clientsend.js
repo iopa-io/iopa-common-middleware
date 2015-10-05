@@ -100,7 +100,7 @@ ClientSend.prototype._send = function ClientSend_send(channelContext, path, opti
        options = { "iopa.Method": options};
    
     options = options || {};
-    options[IOPA.Body] = new iopaStream.OutgoingStream(buf);
+    options[IOPA.Body] = new iopaStream.OutgoingMessageStream(buf);
               
     return channelContext[SERVER.Fetch](path, options, null , function(childContext){  
         return new Promise(function(resolve, reject){
