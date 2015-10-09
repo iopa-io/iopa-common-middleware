@@ -71,9 +71,9 @@ ClientSend.prototype.dispatch = function ClientSend_dispatch(context, next){
  * @param buf   optional data to write
  */
 ClientSend.prototype._send = function ClientSend_send(context) {
-    return context.dispatch().then(new Promise(function (resolve, reject) {
+    return context.dispatch().then(function(){return new Promise(function (resolve, reject) {
         context[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.DONE] = resolve;
-    }));
+    })});
 };
 
 /**
@@ -82,11 +82,11 @@ ClientSend.prototype._send = function ClientSend_send(context) {
  * @param buf   optional data to write
  */
 ClientSend.prototype._observe = function ClientSend_observe(context, callback) {
-    return context.dispatch().then(
-        new Promise(function (resolve, reject) {
+    return context.dispatch().then(function(){
+        return new Promise(function (resolve, reject) {
             context[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.OBSERVE] = callback;
-            context[IOPA.CancelToken].onCancelled(resolve);
-        }));
+            context[IOPA.CancelToken].onCancelled(function(){console.log("CANCELLED"); resolve(null);});
+        })});
 };
 
 /**
