@@ -47,7 +47,9 @@ describe('#Pipeline()', function () {
         var server = stubServer.createServer(app.build())
       
         server.connect("urn://localhost").then(function (client) {
-           return client.send("/projector", "GET");
+            var context = client.create("/projector", "GET");
+            
+           return context.send()
         }).then(function () { done();
         })
 
@@ -100,9 +102,9 @@ describe('#Cache()', function () {
         var server = stubServer.createServer(app.build())
    
         server.connect("urn://localhost").then(function (client) {
-            return client["server.Fetch"]("/projector", "GET", function (context) {
-                context["server.RawStream"].end("HELLO WORLD " + seq++);
-            });
+            var context = client.create("/projector", "GET");
+             context["server.RawStream"].end("HELLO WORLD " + seq++);
+             return context.dispatch();
         }).then(function () {
             process.nextTick(function () {
                 done();
@@ -136,7 +138,7 @@ describe('#ClientSend()', function () {
    
         server.connect("urn://localhost").then(function (client) {
 
-            return client.send("/projector", "GET");
+            return client.create("/projector", "GET").send();
         }).then(function () {
             process.nextTick(function () {
                 done();
