@@ -85,7 +85,7 @@ ClientSend.prototype._observe = function ClientSend_observe(context, callback) {
     return context.dispatch().then(function(){
         return new Promise(function (resolve, reject) {
             context[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.OBSERVE] = callback;
-            context[IOPA.CancelToken].onCancelled(function(){console.log("CANCELLED"); resolve(null);});
+            context[IOPA.CancelToken].onCancelled(resolve);
         })});
 };
 
