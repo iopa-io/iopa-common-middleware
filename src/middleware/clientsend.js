@@ -50,7 +50,7 @@ function ClientSend(app) {
  */
 ClientSend.prototype.create = function ClientSend_create(context, next) {
     context.send = this._send.bind(this, context); 
-    context.observe = this._send.bind(this, context);
+    context.observe = this._observe.bind(this, context);
     return next();
 };
 
