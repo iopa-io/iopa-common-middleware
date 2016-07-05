@@ -40,29 +40,38 @@
 function ClientSend(app) {
      app.properties[SERVER.Capabilities][CLIENTSEND.CAPABILITY] = {};
      app.properties[SERVER.Capabilities][CLIENTSEND.CAPABILITY][SERVER.Version] = packageVersion;
-}
+ }
 
 /**
- * Handle outbound client connections
- * @method create 
- * @param context IOPA channelContext dictionary
+ * @method dispatch
+ * @this channelContext IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-ClientSend.prototype.create = function ClientSend_create(context, next) {
-    context.send = this._send.bind(this, context); 
-    context.observe = this._observe.bind(this, context);
+ClientSend.prototype.dispatch = function PipelineMatch_dispatch(channelContext, next){
+    channelContext.create = this.create.bind(this, channelContext, channelContext.create);
     return next();
 };
 
 /**
- * @method dispatch
- * @param parentContext IOPA context dictionary
- * @param next   IOPA application delegate for the remainder of the pipeline
- * @param context IOPA context dictionary
+ * Creates a new IOPA Context that is a child request/response of a parent Context
+ *
+ * @method createChildContext
+ *
+ * @param parentContext IOPA Context for parent
+ * @param next IOPA application delegate for the remainder of the createContext pipeline
+ * @param url string representation of /hello
+ * @param options object 
+ * @returns context
+ * @public
  */
-ClientSend.prototype.dispatch = function ClientSend_dispatch(context, next){ 
-    context[IOPA.Events].on(IOPA.EVENTS.Response, this.client_invokeOnResponse.bind(this, context));
-    return next();
+ClientSend.prototype.create = function ClientSend_create(parentContext, next, url, options){ 
+    var context = next(url, options);
+
+    context.send = this._send.bind(this, context);
+    context.observe = this._observe.bind(this, context);
+    context[IOPA.Events].on(IOPA.EVENTS.Response, this._invokeOnResponse.bind(this, context));
+
+    return context;
 };
 
 /**
@@ -70,12 +79,13 @@ ClientSend.prototype.dispatch = function ClientSend_dispatch(context, next){
  * @this context IOPA context dictionary
  * @param buf   optional data to write
  */
-ClientSend.prototype._send = function ClientSend_send(context) {
+ClientSend.prototype._send = function ClientSend_send(context, body) {
        var p = new Promise(function (resolve, reject) {
                     context[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.DONE] = resolve;
+                    context[IOPA.Body].end(body || '');
                 });
        
-       return context.using(context.dispatch().then(function(){return p;}));
+       return context.using(p);
 };
 
 /**
@@ -86,10 +96,10 @@ ClientSend.prototype._send = function ClientSend_send(context) {
 ClientSend.prototype._observe = function ClientSend_observe(context, callback) {   
     var p = new Promise(function (resolve, reject) {
                     context[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.OBSERVE] = callback;
-                       context[IOPA.CancelToken].onCancelled(resolve);
+                       context[SERVER.CancelToken].onCancelled(resolve);
                 });
        
-   return context.using(context.dispatch().then(function(){return p;}));
+   return context.using(p);
 };
 
 /**
@@ -98,7 +108,7 @@ ClientSend.prototype._observe = function ClientSend_observe(context, callback) {
  * @param responseContext IOPA responseContext context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-ClientSend.prototype.client_invokeOnResponse = function ClientSend_client_invokeOnResponse(context, responseContext) {
+ClientSend.prototype._invokeOnResponse = function ClientSend_invokeOnResponse(context, responseContext) {
 
     if (context[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.DONE]) {
         context[SERVER.Capabilities][CLIENTSEND.CAPABILITY][CLIENTSEND.DONE](responseContext);

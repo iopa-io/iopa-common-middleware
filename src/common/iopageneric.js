@@ -16,12 +16,12 @@
 
 const util = require('util'),
     iopaStream = require('iopa-common-stream');
-    
+
 const constants = require('iopa').constants,
     IOPA = constants.IOPA,
     SERVER = constants.SERVER
- 
- const packageVersion = require('../../package.json').version;
+
+const packageVersion = require('../../package.json').version;
 
 /**
  * IOPA Middleware 
@@ -32,7 +32,7 @@ const constants = require('iopa').constants,
  * @public MUSTINHERIT
  */
 function GenericMiddleware(app) {
-    }
+}
 
 
 // MUSTINERIT METHODS
@@ -45,8 +45,8 @@ function GenericMiddleware(app) {
  * @returns void
  * @protected 
  */
-GenericMiddleware.prototype.requestin = function(context){
-    
+GenericMiddleware.prototype.requestin = function (context) {
+
 }
 
 /**
@@ -57,8 +57,8 @@ GenericMiddleware.prototype.requestin = function(context){
  * @returns void
  * @protected
  */
-GenericMiddleware.prototype.requestout = function(context){
-    
+GenericMiddleware.prototype.requestout = function (context) {
+
 }
 
 /**
@@ -69,8 +69,8 @@ GenericMiddleware.prototype.requestout = function(context){
  * @returns void
  * @protected
  */
-GenericMiddleware.prototype.responsein = function(context){
-    
+GenericMiddleware.prototype.responsein = function (context, next) {
+
 }
 
 /**
@@ -81,66 +81,77 @@ GenericMiddleware.prototype.responsein = function(context){
  * @returns void
  * @protected
  */
-GenericMiddleware.prototype.responseout = function(context){
-    
+GenericMiddleware.prototype.responseout = function (context) {
+
 }
 
 // STANDARD IOPA METHODS  (ABOVE ARE SIMPLIFICATIONS TO AVOID BOILERPLATE HOOKS IN A LOT OF MIDDLEWARE)
 
 /**
  * @method invoke
- * @param context IOPA context dictionary
- * @param next   IOPA application delegate for the remainder of the pipeline
- */
-GenericMiddleware.prototype.channel = function GenericMiddleware_channel(channelContext, next) {
-     channelContext[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, channelContext));  
-     return next();
-};
-
-/**
- * @method invoke
- * @param context IOPA context dictionary
+ * @this channelContext IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 GenericMiddleware.prototype.invoke = function GenericMiddleware_invoke(context, next) {
-        this.requestin(context);
-        return next();
-   
-};
-
-/**
- * @method invoke
- * @param context IOPA context dictionary
- * @param next   IOPA application delegate for the remainder of the pipeline
- */
-GenericMiddleware.prototype.connect = function GenericMiddleware_connect(context, next) {
-     context[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, context));
-     return next();
-};
-
-
-/**
- * @method connect
- * @this context IOPA context dictionary
- */
-GenericMiddleware.prototype.dispatch = function GenericMiddleware_dispatch(context, next) {
-    if (context[SERVER.IsRequest])
-       this.requestout(context);
-    else
-       this.responseout(context);
-    
+    this.responsein(context)
     return next();
-}
+};
 
 /**
- * @method _invokeOnParentResponse
- * @this CacheMatch
- * @param channelContext IOPA parent context dictionary
- * @param context IOPA childResponse context dictionary
+ * @method dispatch
+ * @this channelContext IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-function _invokeOnParentResponse(parentContext, response) {
-   this.responsein(response);
+GenericMiddleware.prototype.dispatch = function GenericMiddleware_dispatch(channelContext, next) {
+    channelContext.create = this.create.bind(this, channelContext, channelContext.create);
+    return next();
+};
+
+/**
+ * Creates a new IOPA Context that is a child request/response of a parent Context
+ *
+ * @method createChildContext
+ *
+ * @param parentContext IOPA Context for parent
+ * @param next IOPA application delegate for the remainder of the createContext pipeline
+ * @param url string representation of /hello
+ * @param options object 
+ * @returns context
+ * @public
+ */
+GenericMiddleware.prototype.create = function GenericMiddleware_create(parentContext, next, url, options) {
+    var context = next(url, options);
+
+    context.send = this._send.bind(this, context, context.send);
+    context[IOPA.Events].on(IOPA.EVENTS.Response, this._invokeOnResponse.bind(this, context));
+
+    return context;
+};
+
+/**
+ * Event handler for when a response is received from an outgoing client request on a parent channel
+ * This handler finds the matched outgoing child context and transfers the event to the child
+ * 
+ * @method _invokeOnParentResponse
+ * @param parentContext IOPA Context for parent
+ * @param response IOPA resonse context dictionary for this event
+ */
+GenericMiddleware.prototype._invokeOnResponse = function GenericMiddleware_invokeOnResponse(parentContext, response) {
+    this.responsein(response);
+};
+
+/**
+ * @method send
+ * @this context IOPA context dictionary
+ * @param buf   optional data to write
+ */
+GenericMiddleware.prototype._send = function GenericMiddleware_send(context, next, body) {
+    if (context[SERVER.IsRequest])
+        this.requestout(context);
+    else
+        this.responseout(context);
+
+    return next(body);
 };
 
 module.exports = GenericMiddleware;

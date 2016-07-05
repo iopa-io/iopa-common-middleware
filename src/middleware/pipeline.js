@@ -15,7 +15,7 @@
  */
 
 // DEPENDENCIES
-const constants = require('iopa').constants,
+const constants = require('iopa-rest').constants,
     IOPA = constants.IOPA,
     SERVER = constants.SERVER
     
@@ -29,8 +29,8 @@ const PIPELINE = {CAPABILITY: "urn:io.iopa:pipeline",
 /**
  * IOPA Middleware 
  *
- * @class BackForth
- * @this app.properties  the IOPA AppBuilder Properties Dictionary, used to add server.capabilities
+ * @class PipelineMatch
+ * @param app object the IOPA AppBuilder Properties Dictionary, used to add server.capabilities
  * @constructor
  * @public
  */
@@ -44,36 +44,58 @@ function PipelineMatch(app) {
  * @this channelContext IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-PipelineMatch.prototype.channel = function BackForth_invoke(channelContext, next) {
+PipelineMatch.prototype.invoke = function PipelineMatch_invoke(channelContext, next) {
      channelContext[SERVER.Capabilities][PIPELINE.CAPABILITY][PIPELINE.SENT] = [];
-     channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, channelContext));
+     channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._invokeOnParentResponse.bind(this, channelContext));
     return next();
 };
 
 /**
- * @method connect
- * @this context IOPA context dictionary
+ * @method dispatch
+ * @this channelContext IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-PipelineMatch.prototype.connect = function BackForth_connect(channelContext, next) {
-     channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, channelContext));
+PipelineMatch.prototype.dispatch = function PipelineMatch_dispatch(channelContext, next){
+  
+     channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._invokeOnParentResponse.bind(this, channelContext));
+    
      channelContext[SERVER.Capabilities][PIPELINE.CAPABILITY][PIPELINE.SENT] = [];
+  
+     channelContext.create = this.create.bind(this, channelContext, channelContext.create);
+    
     return next();
 };
 
-
-PipelineMatch.prototype.dispatch = function BackForth_dispatch(context, next){
-    context[SERVER.ParentContext][SERVER.Capabilities][PIPELINE.CAPABILITY][PIPELINE.SENT].push(context);
-    return next();
-};
 
 /**
- * @method _client_invokeOnParentResponse
- * @this context IOPA parent context dictionary
- * @param context IOPA childResponse context dictionary
- * @param next   IOPA application delegate for the remainder of the pipeline
+ * Creates a new IOPA Context that is a child request/response of a parent Context
+ *
+ * @method create
+ *
+ * @param parentContext IOPA Context for parent
+ * @param url string representation of /hello to add to parent url
+ * @param options object 
+ * @returns context
+ * @public
  */
-PipelineMatch.prototype._client_invokeOnParentResponse = function BackForth_client_invokeOnParentResponse(parentContext, response) {
+PipelineMatch.prototype.create = function PipelineMatch_create(parentContext, next, url, options) {
+   var context = next(url, options);
+
+   if (context[SERVER.IsLocalOrigin])
+     context[SERVER.ParentContext][SERVER.Capabilities][PIPELINE.CAPABILITY][PIPELINE.SENT].push(context);
+
+   return context;
+}
+
+/**
+ * Event handler for when a response is received from an outgoing client request on a parent channel
+ * This handler finds the matched outgoing child context and transfers the event to the child
+ * 
+ * @method _invokeOnParentResponse
+ * @param parentContext IOPA Context for parent
+ * @param response IOPA resonse context dictionary for this event
+ */
+PipelineMatch.prototype._invokeOnParentResponse = function PipelineMatch_invokeOnParentResponse(parentContext, response) {
     if ((PIPELINE.SENT in  parentContext[SERVER.Capabilities][PIPELINE.CAPABILITY])
      && (parentContext[SERVER.Capabilities][PIPELINE.CAPABILITY][PIPELINE.SENT].length > 0))
    {

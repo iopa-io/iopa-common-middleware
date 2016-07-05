@@ -22,15 +22,16 @@ var util = require('util');
 const constants = require('iopa').constants,
     IOPA = constants.IOPA,
     SERVER = constants.SERVER
-    
-const CACHE = {CAPABILITY: "urn:io.iopa:cache",
-     DB: "cache.Db",
-     DONOTCACHE: "cache.DoNotCache",
-     MATCHED: "cache.Matched",
-     MATCHANYHOST: "cache.MatchAnyHost"
-      }
- 
- const packageVersion = require('../../package.json').version;
+
+const CACHE = {
+    CAPABILITY: "urn:io.iopa:cache",
+    DB: "cache.Db",
+    DONOTCACHE: "cache.DoNotCache",
+    MATCHED: "cache.Matched",
+    MATCHANYHOST: "cache.MatchAnyHost"
+}
+
+const packageVersion = require('../../package.json').version;
 
 
 // GLOBALS
@@ -48,10 +49,10 @@ const CACHE = {CAPABILITY: "urn:io.iopa:cache",
  */
 var _db = LRU({
     max: (32768 * 1024),
-    length: function(n) {
+    length: function (n) {
         return n.length
     },
-    dispose: function(key, value) {
+    dispose: function (key, value) {
         for (var prop in value) {
             if (value.hasOwnProperty(prop)) {
                 delete value[prop];
@@ -63,18 +64,18 @@ var _db = LRU({
 function cacheKeyId(context, matchanyhost) {
     var result = "cache://";
     if (!matchanyhost)
-         result += context[SERVER.RemoteAddress] + ":" + context[SERVER.RemotePort];
+        result += context[SERVER.RemoteAddress] + ":" + context[SERVER.RemotePort];
     result += "/&id=" + context[IOPA.MessageId];
-  // console.log(result);
+    // console.log(result);
     return result;
 }
 
 function cacheKeyToken(context, matchanyhost) {
 
     var result = "cache://";
-     if (!matchanyhost)
-         result += context[SERVER.RemoteAddress] + ":" + context[SERVER.RemotePort];
-     result += "/&token=" + context[IOPA.Token];
+    if (!matchanyhost)
+        result += context[SERVER.RemoteAddress] + ":" + context[SERVER.RemotePort];
+    result += "/&token=" + context[IOPA.Token];
 
     return result;
 }
@@ -150,7 +151,7 @@ Cache.prototype._cache = function Cache_cache(context) {
     if (!context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.DONOTCACHE]) {
         var cacheData = {};
         cacheData[SERVER.IsLocalOrigin] = context[SERVER.IsLocalOrigin];
-        cacheData[IOPA.CancelToken] = context[IOPA.CancelToken];
+        cacheData[SERVER.CancelToken] = context[SERVER.CancelToken];
         cacheData[IOPA.Events] = context[IOPA.Events];
         cacheData[SERVER.RawStream] = context[SERVER.RawStream];
         cacheData[IOPA.Seq] = context[IOPA.Seq];
@@ -163,7 +164,7 @@ Cache.prototype._cache = function Cache_cache(context) {
             this._db.set(key, cacheData);
         }
 
-        context[IOPA.CancelToken].onCancelled(this._closeContext.bind(this, context));
+        context[SERVER.CancelToken].onCancelled(this._closeContext.bind(this, context));
 
     };
 };
@@ -191,71 +192,67 @@ module.exports.Cache = Cache;
  * @public
  */
 function CacheMatch(app) {
-     app.properties[SERVER.Capabilities][CACHE.CAPABILITY] = {};
-     app.properties[SERVER.Capabilities][CACHE.CAPABILITY][SERVER.Version] = packageVersion;
-     app.properties[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.DB] = function() { return _db; };
+    app.properties[SERVER.Capabilities][CACHE.CAPABILITY] = {};
+    app.properties[SERVER.Capabilities][CACHE.CAPABILITY][SERVER.Version] = packageVersion;
+    app.properties[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.DB] = function () { return _db; };
 }
 
 /**
- * Handle inbound server connections
  * @method invoke
- * @param context IOPA context dictionary
+ * @this channelContext IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-CacheMatch.prototype.channel = function CacheMatch_channel(channelContext, next) {
-   channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, channelContext));  
-   return next();
+CacheMatch.prototype.invoke = function CacheMatch_invoke(channelContext, next) {
+    channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._invokeOnParentResponse.bind(this, channelContext));
+    return next();
 };
 
 /**
- * Handle outbound client connections
- * @method connect 
- * @param context IOPA channelContext dictionary
+ * @method dispatch
+ * @this channelContext IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-CacheMatch.prototype.connect = function CacheMatch_connect(channelContext, next) {
-     channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._client_invokeOnParentResponse.bind(this, channelContext));
-     return next();
+CacheMatch.prototype.dispatch = function CacheMatch_dispatch(channelContext, next) {
+
+    channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._invokeOnParentResponse.bind(this, channelContext));
+
+   // channelContext.create = this.create.bind(this, channelContext, channelContext.create);
+
+    return next();
 };
 
- var seq = 0;
-   
+var seq = 0;
+
 /**
  * @method _client_invokeOnParentResponse
  * @this CacheMatch
  * @param channelContext IOPA parent context dictionary
  * @param context IOPA childResponse context dictionary
- * @param next   IOPA application delegate for the remainder of the pipeline
  */
-CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client_invokeOnParentResponse(channelContext, context) {
-   
-    if (context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.MATCHED])
-    {   
-          return;
-        }
+CacheMatch.prototype._invokeOnParentResponse = function CacheMatch_invokeOnParentResponse(channelContext, context) {
+
+    if (context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.MATCHED]) {
+        return;
+    }
 
     //CHECK CACHE
     var key = cacheKeyId(context);
-   
+
     var cachedOriginal = _db.peek(key);
-    if (!cachedOriginal)
-    {
+    if (!cachedOriginal) {
         key = cacheKeyId(context, true);
         cachedOriginal = _db.peek(key);
     }
-    
-    if (context[IOPA.Token])
-    {
-        if (!cachedOriginal) {  
-            if (context[IOPA.Token])
-            {
-            key = cacheKeyToken(context);
-            cachedOriginal = _db.peek(key);
-            if (!cachedOriginal)
-            {
-                key = cacheKeyToken(context, true);
+
+    if (context[IOPA.Token]) {
+        if (!cachedOriginal) {
+            if (context[IOPA.Token]) {
+                key = cacheKeyToken(context);
                 cachedOriginal = _db.peek(key);
-            }           
+                if (!cachedOriginal) {
+                    key = cacheKeyToken(context, true);
+                    cachedOriginal = _db.peek(key);
+                }
             }
         } else {
             if (context[IOPA.Token] && cachedOriginal[IOPA.Token] &&
@@ -267,10 +264,10 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
 
     if (cachedOriginal) {
         if (cachedOriginal[IOPA.Events]) {
-      //  context.log.info("[IOPA_CACHE_MATCH] MATCHED " + key + "    " + context[IOPA.Method] +" "+ context[IOPA.Seq] +"=" + cachedOriginal[IOPA.Seq]);
-           
+            //  context.log.info("[IOPA_CACHE_MATCH] MATCHED " + key + "    " + context[IOPA.Method] +" "+ context[IOPA.Seq] +"=" + cachedOriginal[IOPA.Seq]);
+
             // TRANSFER ONTO EVENTS PIPELINE
-           context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.MATCHED] = context[IOPA.Seq];
+            context[SERVER.Capabilities][CACHE.CAPABILITY][CACHE.MATCHED] = context[IOPA.Seq];
             cachedOriginal[IOPA.Events].emit(IOPA.EVENTS.Response, context);
 
         } else {
@@ -278,7 +275,7 @@ CacheMatch.prototype._client_invokeOnParentResponse = function CacheMatch_client
             // silently ignore  TODO: Transfer to a different pipeline
         }
     } else {
-     // context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + key + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
+        // context.log.info("[IOPA_CACHE_MATCH] UNKNOWN RESPONSE REFERENCE " + key + "    " + context[IOPA.Method] +" "+ context[IOPA.MessageId] +":" + context[IOPA.Seq]);
         // silently ignore    TODO: Transfer to a different pipeline
     }
 };
