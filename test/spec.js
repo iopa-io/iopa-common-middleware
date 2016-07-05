@@ -15,6 +15,8 @@
  */
 
 // global.Promise = require('bluebird');
+var iopa = require('iopa');
+require('iopa-rest');
 
 const iopaMiddleware = require('../index.js'),
     stubServer = require('iopa-test').stubServer,
@@ -22,9 +24,7 @@ const iopaMiddleware = require('../index.js'),
     Cache = require('../index.js').Cache,
     ClientSend = require('../index.js').ClientSend
 
-
 var should = require('should');
-const iopa = require('iopa-rest');
 
 describe('#Pipeline()', function () {
     it('should have Pipeline', function () {

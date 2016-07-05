@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
+var iopa = require('iopa');
 exports.Pipeline = require ( './src/middleware/pipeline.js' ) ;
 exports.Cache = require ( './src/middleware/cache.js' ) ;
 exports.ClientSend = require ( './src/middleware/clientsend.js' ) ;
